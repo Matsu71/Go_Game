@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>囲碁ミニアプリ</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <h1>囲碁ミニアプリ</h1>
+      <div class="size-switcher" aria-label="盤サイズ切り替え">
+        <button id="size-5" class="size-button active" type="button" data-size="5" aria-pressed="true">5路盤</button>
+        <button id="size-7" class="size-button" type="button" data-size="7" aria-pressed="false">7路盤</button>
+        <button id="size-9" class="size-button" type="button" data-size="9" aria-pressed="false">9路盤</button>
+      </div>
+      <p id="turn" class="status" aria-live="polite">手番: 黒番</p>
+      <p id="captures" class="captures">アゲハマ: 黒 0 / 白 0</p>
+      <p id="result" class="result" aria-live="polite"></p>
+      <p id="message" class="message" aria-live="polite">黒番から開始します。</p>
+      <div class="actions">
+        <button id="pass-button" class="control-button pass-button" type="button">パス</button>
+        <button id="reset-button" class="control-button reset-button" type="button">リセット</button>
+      </div>
+      <p id="note" class="note">コミは20目です。
+2連続パスで終局します。
+中国ルールで、最終判定は盤上の石数と地で計算します。</p>
+    </section>
+
+    <section id="board-wrap" class="board-wrap" aria-label="5路盤">
+      <div id="board" class="board size-5" role="grid" aria-label="5×5の囲碁盤"></div>
+    </section>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>

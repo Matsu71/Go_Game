@@ -37,6 +37,16 @@ function cloneBoard(board) {
   return board.map((row) => [...row]);
 }
 
+function cloneState(state) {
+  return {
+    ...state,
+    board: cloneBoard(state.board),
+    previousBoard: state.previousBoard ? cloneBoard(state.previousBoard) : null,
+    captures: { ...state.captures },
+    result: state.result ? { ...state.result } : null
+  };
+}
+
 function getBoardSize(board) {
   return board.length;
 }
@@ -415,11 +425,15 @@ function initializeApp() {
   const resultElement = document.getElementById("result");
   const messageElement = document.getElementById("message");
   const noteElement = document.getElementById("note");
+  const undoButton = document.getElementById("undo-button");
+  const redoButton = document.getElementById("redo-button");
   const passButton = document.getElementById("pass-button");
   const resetButton = document.getElementById("reset-button");
   const sizeButtons = Array.from(document.querySelectorAll(".size-button"));
 
   let state = createInitialState();
+  let history = [cloneState(state)];
+  let historyIndex = 0;
 
   function getCurrentBoardSize() {
     return getBoardSize(state.board);
@@ -437,6 +451,9 @@ function initializeApp() {
       return;
     }
 
+    history = history.slice(0, historyIndex + 1);
+    history.push(cloneState(result.nextState));
+    historyIndex = history.length - 1;
     state = result.nextState;
     render();
   }
@@ -482,6 +499,8 @@ function initializeApp() {
     resultElement.textContent = state.result ? createResultText(state.result) : "";
     messageElement.textContent = state.message;
     noteElement.textContent = createNoteText(boardSize);
+    undoButton.disabled = historyIndex === 0;
+    redoButton.disabled = historyIndex >= history.length - 1;
     passButton.disabled = state.gameOver;
     document.title = `${boardSize}路盤 囲碁ミニアプリ`;
 
@@ -520,7 +539,30 @@ function initializeApp() {
       return;
     }
 
+    history = history.slice(0, historyIndex + 1);
+    history.push(cloneState(result.nextState));
+    historyIndex = history.length - 1;
     state = result.nextState;
+    render();
+  }
+
+  function handleUndo() {
+    if (historyIndex === 0) {
+      return;
+    }
+
+    historyIndex -= 1;
+    state = cloneState(history[historyIndex]);
+    render();
+  }
+
+  function handleRedo() {
+    if (historyIndex >= history.length - 1) {
+      return;
+    }
+
+    historyIndex += 1;
+    state = cloneState(history[historyIndex]);
     render();
   }
 
@@ -530,12 +572,16 @@ function initializeApp() {
     }
 
     state = createInitialState(nextBoardSize);
+    history = [cloneState(state)];
+    historyIndex = 0;
     buildBoard(nextBoardSize);
     render();
   }
 
   buildBoard(getCurrentBoardSize());
 
+  undoButton.addEventListener("click", handleUndo);
+  redoButton.addEventListener("click", handleRedo);
   passButton.addEventListener("click", handlePass);
 
   sizeButtons.forEach((button) => {
@@ -546,6 +592,8 @@ function initializeApp() {
 
   resetButton.addEventListener("click", () => {
     state = createInitialState(getCurrentBoardSize());
+    history = [cloneState(state)];
+    historyIndex = 0;
     render();
   });
 

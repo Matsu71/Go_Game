@@ -132,6 +132,14 @@ h1 {
   background: #a37136;
 }
 
+.history-button {
+  background: #6d7d63;
+}
+
+.history-button:hover {
+  background: #7f9075;
+}
+
 .reset-button {
   background: #342216;
 }

@@ -1,13 +1,18 @@
 const DEFAULT_BOARD_SIZE = 5;
-const AVAILABLE_BOARD_SIZES = [5, 7, 9];
+const AVAILABLE_BOARD_SIZES = [5, 6, 7, 8, 9];
 const KOMI_BY_BOARD_SIZE = {
   5: 20,
+  6: 4,
   7: 9,
+  8: 10,
   9: 7
 };
 const BLACK = "black";
 const WHITE = "white";
 const EMPTY = null;
+const LAYOUT_TEXT_TOP = "text-top";
+const LAYOUT_BOARD_TOP = "board-top";
+const LAYOUT_STORAGE_KEY = "go-mini-app-layout";
 
 function createEmptyBoard(boardSize) {
   return Array.from({ length: boardSize }, () => Array(boardSize).fill(EMPTY));
@@ -43,7 +48,12 @@ function cloneState(state) {
     board: cloneBoard(state.board),
     previousBoard: state.previousBoard ? cloneBoard(state.previousBoard) : null,
     captures: { ...state.captures },
-    result: state.result ? { ...state.result } : null
+    result: state.result
+      ? {
+          ...state.result,
+          deadStones: state.result.deadStones ? { ...state.result.deadStones } : undefined
+        }
+      : null
   };
 }
 
@@ -141,9 +151,220 @@ function removeGroup(board, stones) {
   }
 }
 
+function collectGroups(board) {
+  const boardSize = getBoardSize(board);
+  const visited = new Set();
+  const groups = [];
+  const groupIdByStone = new Map();
+
+  for (let row = 0; row < boardSize; row += 1) {
+    for (let col = 0; col < boardSize; col += 1) {
+      const color = board[row][col];
+      const key = toKey(row, col);
+
+      if (color === EMPTY || visited.has(key)) {
+        continue;
+      }
+
+      const info = getGroupInfo(board, row, col);
+      const id = groups.length;
+
+      info.stones.forEach(([stoneRow, stoneCol]) => {
+        const stoneKey = toKey(stoneRow, stoneCol);
+        visited.add(stoneKey);
+        groupIdByStone.set(stoneKey, id);
+      });
+
+      groups.push({
+        id,
+        color,
+        stones: info.stones,
+        liberties: info.liberties,
+        libertyRegionIds: new Set(),
+        eyeRegionIds: new Set()
+      });
+    }
+  }
+
+  return { groups, groupIdByStone };
+}
+
+function collectEmptyRegions(board, groupIdByStone) {
+  const boardSize = getBoardSize(board);
+  const visited = new Set();
+  const regions = [];
+  const regionIdByPoint = new Map();
+
+  for (let row = 0; row < boardSize; row += 1) {
+    for (let col = 0; col < boardSize; col += 1) {
+      const startKey = toKey(row, col);
+      if (board[row][col] !== EMPTY || visited.has(startKey)) {
+        continue;
+      }
+
+      const stack = [[row, col]];
+      const points = [];
+      const borderingColors = new Set();
+      const borderingGroupIds = new Set();
+      const id = regions.length;
+
+      visited.add(startKey);
+      regionIdByPoint.set(startKey, id);
+
+      while (stack.length > 0) {
+        const [currentRow, currentCol] = stack.pop();
+        points.push([currentRow, currentCol]);
+
+        for (const [nextRow, nextCol] of getNeighbors(currentRow, currentCol, boardSize)) {
+          const neighbor = board[nextRow][nextCol];
+          const neighborKey = toKey(nextRow, nextCol);
+
+          if (neighbor === EMPTY) {
+            if (!visited.has(neighborKey)) {
+              visited.add(neighborKey);
+              regionIdByPoint.set(neighborKey, id);
+              stack.push([nextRow, nextCol]);
+            }
+            continue;
+          }
+
+          borderingColors.add(neighbor);
+          const groupId = groupIdByStone.get(neighborKey);
+          if (groupId !== undefined) {
+            borderingGroupIds.add(groupId);
+          }
+        }
+      }
+
+      regions.push({
+        id,
+        points,
+        borderingColors,
+        borderingGroupIds
+      });
+    }
+  }
+
+  return { regions, regionIdByPoint };
+}
+
+function analyzeBoard(board) {
+  const { groups, groupIdByStone } = collectGroups(board);
+  const { regions, regionIdByPoint } = collectEmptyRegions(board, groupIdByStone);
+
+  regions.forEach((region) => {
+    region.borderingGroupIds.forEach((groupId) => {
+      groups[groupId].libertyRegionIds.add(region.id);
+    });
+
+    if (region.borderingColors.size !== 1 || region.borderingGroupIds.size !== 1) {
+      return;
+    }
+
+    const [groupId] = region.borderingGroupIds;
+    const group = groups[groupId];
+    if (group && group.color === [...region.borderingColors][0]) {
+      group.eyeRegionIds.add(region.id);
+    }
+  });
+
+  return {
+    groups,
+    groupIdByStone,
+    emptyRegions: regions,
+    regionIdByPoint
+  };
+}
+
+function getEmptyRegionInfo(board, startRow, startCol) {
+  const boardSize = getBoardSize(board);
+  if (!isInsideBoard(startRow, startCol, boardSize) || board[startRow][startCol] !== EMPTY) {
+    return {
+      points: [],
+      borderingColors: new Set()
+    };
+  }
+
+  const stack = [[startRow, startCol]];
+  const visited = new Set([toKey(startRow, startCol)]);
+  const points = [];
+  const borderingColors = new Set();
+
+  while (stack.length > 0) {
+    const [row, col] = stack.pop();
+    points.push([row, col]);
+
+    for (const [nextRow, nextCol] of getNeighbors(row, col, boardSize)) {
+      const neighbor = board[nextRow][nextCol];
+      const key = toKey(nextRow, nextCol);
+
+      if (neighbor === EMPTY) {
+        if (!visited.has(key)) {
+          visited.add(key);
+          stack.push([nextRow, nextCol]);
+        }
+        continue;
+      }
+
+      borderingColors.add(neighbor);
+    }
+  }
+
+  return { points, borderingColors };
+}
+
+function isClearlyDeadGroup(group, board) {
+  if (group.eyeRegionIds.size >= 2) {
+    return false;
+  }
+
+  // 「明らかに死んでいる石」だけを除外したいので、
+  // 眼が少なく、呼吸点も狭く、取り除いたあと完全に相手地になる形だけを対象にします。
+  if (group.libertyRegionIds.size > 1 || group.liberties.size > 3) {
+    return false;
+  }
+
+  const opponent = getOpponent(group.color);
+  const boardWithoutGroup = cloneBoard(board);
+  removeGroup(boardWithoutGroup, group.stones);
+  const [sampleRow, sampleCol] = group.stones[0];
+  const mergedRegion = getEmptyRegionInfo(boardWithoutGroup, sampleRow, sampleCol);
+
+  return mergedRegion.borderingColors.size === 1 && mergedRegion.borderingColors.has(opponent);
+}
+
+function removeClearlyDeadGroupsForScoring(board) {
+  const scoringBoard = cloneBoard(board);
+  const deadStones = {
+    [BLACK]: 0,
+    [WHITE]: 0
+  };
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const analysis = analyzeBoard(scoringBoard);
+    const deadGroups = analysis.groups.filter((group) => isClearlyDeadGroup(group, scoringBoard));
+
+    if (deadGroups.length === 0) {
+      continue;
+    }
+
+    deadGroups.forEach((group) => {
+      deadStones[group.color] += group.stones.length;
+      removeGroup(scoringBoard, group.stones);
+    });
+
+    changed = true;
+  }
+
+  return { scoringBoard, deadStones };
+}
+
 function evaluateBoard(board) {
   const boardSize = getBoardSize(board);
   const komi = getKomiForBoardSize(boardSize);
+  const { scoringBoard, deadStones } = removeClearlyDeadGroupsForScoring(board);
   let blackStones = 0;
   let whiteStones = 0;
   let blackTerritory = 0;
@@ -153,7 +374,7 @@ function evaluateBoard(board) {
 
   for (let row = 0; row < boardSize; row += 1) {
     for (let col = 0; col < boardSize; col += 1) {
-      const value = board[row][col];
+      const value = scoringBoard[row][col];
 
       if (value === BLACK) {
         blackStones += 1;
@@ -180,7 +401,7 @@ function evaluateBoard(board) {
         region.push([currentRow, currentCol]);
 
         for (const [nextRow, nextCol] of getNeighbors(currentRow, currentCol, boardSize)) {
-          const neighbor = board[nextRow][nextCol];
+          const neighbor = scoringBoard[nextRow][nextCol];
           const key = toKey(nextRow, nextCol);
 
           if (neighbor === EMPTY && !visitedEmpty.has(key)) {
@@ -236,6 +457,7 @@ function evaluateBoard(board) {
     blackScore,
     whiteScore,
     komi,
+    deadStones,
     winner,
     margin
   };
@@ -262,13 +484,19 @@ function createNoteText(boardSize) {
 }
 
 function createResultText(result) {
-  return [
+  const lines = [
     "盤面評価です。",
     `黒は${formatScore(result.blackArea)}目です。石${result.blackStones}、地${result.blackTerritory}です。`,
     `白は${formatScore(result.whiteArea)}目です。石${result.whiteStones}、地${result.whiteTerritory}です。`,
     `コミは${formatScore(result.komi)}目です。`,
     `白の合計は${formatScore(result.whiteScore)}目です。`
-  ].join("\n");
+  ];
+
+  if (result.deadStones[BLACK] > 0 || result.deadStones[WHITE] > 0) {
+    lines.push(`死石として扱った石は、黒${result.deadStones[BLACK]}、白${result.deadStones[WHITE]}です。`);
+  }
+
+  return lines.join("\n");
 }
 
 function attemptMove(state, row, col) {
@@ -417,7 +645,36 @@ function formatCellLabel(value, row, col) {
   return `${row + 1}行${col + 1}列: 空き`;
 }
 
+function sanitizeLayoutPreference(layoutPreference) {
+  return layoutPreference === LAYOUT_BOARD_TOP ? LAYOUT_BOARD_TOP : LAYOUT_TEXT_TOP;
+}
+
+function getStoredLayoutPreference() {
+  if (typeof localStorage === "undefined") {
+    return LAYOUT_TEXT_TOP;
+  }
+
+  try {
+    return sanitizeLayoutPreference(localStorage.getItem(LAYOUT_STORAGE_KEY));
+  } catch (error) {
+    return LAYOUT_TEXT_TOP;
+  }
+}
+
+function storeLayoutPreference(layoutPreference) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, sanitizeLayoutPreference(layoutPreference));
+  } catch (error) {
+    // localStorage が使えない環境では保存せず、その場の表示だけ更新します。
+  }
+}
+
 function initializeApp() {
+  const appElement = document.querySelector(".app");
   const boardElement = document.getElementById("board");
   const boardWrapElement = document.getElementById("board-wrap");
   const turnElement = document.getElementById("turn");
@@ -430,10 +687,12 @@ function initializeApp() {
   const passButton = document.getElementById("pass-button");
   const resetButton = document.getElementById("reset-button");
   const sizeButtons = Array.from(document.querySelectorAll(".size-button"));
+  const layoutToggleButton = document.getElementById("layout-toggle-button");
 
   let state = createInitialState();
   let history = [cloneState(state)];
   let historyIndex = 0;
+  let layoutPreference = getStoredLayoutPreference();
 
   function getCurrentBoardSize() {
     return getBoardSize(state.board);
@@ -460,7 +719,9 @@ function initializeApp() {
 
   function buildBoard(boardSize) {
     boardElement.innerHTML = "";
-    boardElement.classList.remove("size-5", "size-7", "size-9");
+    AVAILABLE_BOARD_SIZES.forEach((size) => {
+      boardElement.classList.remove(`size-${size}`);
+    });
     boardElement.classList.add(`size-${boardSize}`);
     boardElement.style.gridTemplateColumns = `repeat(${boardSize}, var(--grid-cell-size))`;
     boardElement.style.gridTemplateRows = `repeat(${boardSize}, var(--grid-cell-size))`;
@@ -491,6 +752,33 @@ function initializeApp() {
     }
   }
 
+  function applyLayoutPreference(nextLayoutPreference) {
+    const sanitizedLayoutPreference = sanitizeLayoutPreference(nextLayoutPreference);
+    const changed = layoutPreference !== sanitizedLayoutPreference;
+    layoutPreference = sanitizedLayoutPreference;
+
+    if (appElement) {
+      appElement.dataset.layout = layoutPreference;
+    }
+
+    if (typeof document !== "undefined" && document.body) {
+      document.body.dataset.layout = layoutPreference;
+    }
+
+    if (layoutToggleButton) {
+      const isBoardTop = layoutPreference === LAYOUT_BOARD_TOP;
+      layoutToggleButton.setAttribute("aria-pressed", String(isBoardTop));
+      layoutToggleButton.setAttribute(
+        "aria-label",
+        isBoardTop ? "文章ブロックを上に切り替える" : "盤面を上に切り替える"
+      );
+    }
+
+    if (changed) {
+      storeLayoutPreference(layoutPreference);
+    }
+  }
+
   function render() {
     const boardSize = getCurrentBoardSize();
 
@@ -503,6 +791,7 @@ function initializeApp() {
     redoButton.disabled = historyIndex >= history.length - 1;
     passButton.disabled = state.gameOver;
     document.title = `${boardSize}路盤 囲碁ミニアプリ`;
+    applyLayoutPreference(layoutPreference);
 
     sizeButtons.forEach((button) => {
       const size = Number(button.dataset.size);
@@ -590,6 +879,14 @@ function initializeApp() {
     });
   });
 
+  if (layoutToggleButton) {
+    layoutToggleButton.addEventListener("click", () => {
+      applyLayoutPreference(
+        layoutPreference === LAYOUT_TEXT_TOP ? LAYOUT_BOARD_TOP : LAYOUT_TEXT_TOP
+      );
+    });
+  }
+
   resetButton.addEventListener("click", () => {
     state = createInitialState(getCurrentBoardSize());
     history = [cloneState(state)];
@@ -617,6 +914,8 @@ if (typeof module !== "undefined" && module.exports) {
     passTurn,
     evaluateBoard,
     getGroupInfo,
-    createNoteText
+    createNoteText,
+    analyzeBoard,
+    removeClearlyDeadGroupsForScoring
   };
 }

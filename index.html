@@ -10,9 +10,14 @@
   <main class="app">
     <section class="panel">
       <h1>囲碁ミニアプリ</h1>
+      <div class="layout-switcher">
+        <button id="layout-toggle-button" class="layout-toggle-button" type="button">上下切り替え</button>
+      </div>
       <div class="size-switcher" aria-label="盤サイズ切り替え">
         <button id="size-5" class="size-button active" type="button" data-size="5" aria-pressed="true">5路盤</button>
+        <button id="size-6" class="size-button" type="button" data-size="6" aria-pressed="false">6路盤</button>
         <button id="size-7" class="size-button" type="button" data-size="7" aria-pressed="false">7路盤</button>
+        <button id="size-8" class="size-button" type="button" data-size="8" aria-pressed="false">8路盤</button>
         <button id="size-9" class="size-button" type="button" data-size="9" aria-pressed="false">9路盤</button>
       </div>
       <p id="turn" class="status" aria-live="polite">手番: 黒番</p>

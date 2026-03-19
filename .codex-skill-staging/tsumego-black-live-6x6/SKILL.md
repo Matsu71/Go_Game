@@ -7,7 +7,7 @@ description: Reference guidance for creating or revising 6x6 tsumego in this pro
 
 Use this skill as domain guidance for `黒先黒生き` problems on the fixed `6路盤` in this project.
 
-For actual puzzle creation or revision, prefer `tsumego-black-live-6x6-multi-agent` by default.
+For actual puzzle creation or revision, prefer `tsumego-black-live-6x6-multi-agent` by default. That companion skill now uses a lean 3-agent workflow.
 
 ## Coordinate convention
 

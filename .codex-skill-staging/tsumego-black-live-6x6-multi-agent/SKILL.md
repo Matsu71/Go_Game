@@ -1,6 +1,6 @@
 ---
 name: tsumego-black-live-6x6-multi-agent
-description: Use by default when creating or revising 6x6 black-to-live tsumego in this project. Coordinates a multi-agent workflow with puzzle design, stone-economy review, white attack validation, similarity checking against existing problems, and ambiguity checks before the main agent edits tsumego-data.js.
+description: Use by default when creating or revising 6x6 black-to-live tsumego in this project. Coordinates a lean 3-agent workflow with puzzle design, tactical auditing, and uniqueness auditing before the main agent edits tsumego-data.js.
 ---
 
 # 6x6 Black-Live Tsumego Multi-Agent
@@ -32,32 +32,22 @@ The main agent is the orchestrator and final integrator.
 
 ## Default team
 
-Spawn **5 agents by default**. This is the recommended baseline.
+Spawn **3 agents by default**. This is the recommended baseline for cost-conscious work.
 
 1. `Problem Designer`
 
 - Responsibility: propose the final alive black shape, the starting position, intended solution line, and target stones.
 - Focus: whether the puzzle is interesting, natural, and consistent with the requested move count.
 
-2. `Stone Economy Auditor`
+2. `Tactical Auditor`
 
-- Responsibility: remove unnecessary black and white stones.
-- Focus: whether the board is overfilled, whether white stones are doing real work, whether the puzzle can be made smaller or cleaner, and whether trimming White accidentally makes the attack too easy to kill.
+- Responsibility: combine stone-economy review with wrong-move and White-attack validation.
+- Focus: whether the board is overfilled, whether white stones are doing real work, whether the puzzle can be made smaller or cleaner, whether trimming White accidentally makes the attack too easy to kill, whether White should occupy the vital point after wrong moves, and whether the current auto-White logic chooses a believable attack.
 
-3. `White Attack Verifier`
+3. `Uniqueness Auditor`
 
-- Responsibility: inspect wrong black moves and confirm that White's best attack is sensible.
-- Focus: whether White should occupy the vital point, whether the current auto-White logic chooses a reasonable move, whether Black is actually chased or killed in a believable way, and whether White's attack shape is robust enough not to die first in simple problems.
-
-4. `Ambiguity Checker`
-
-- Responsibility: search for alternate correct first moves or unintended life.
-- Focus: whether the start position is already alive, whether multiple first moves solve, and whether the intended move count matches the current app behavior.
-
-5. `Similarity Checker`
-
-- Responsibility: compare the candidate against existing tsumego in `tsumego-data.js`.
-- Focus: whether the candidate repeats an existing eye-making idea, vital point, local topology, or is just a shifted, mirrored, or lightly decorated version of an existing problem.
+- Responsibility: combine ambiguity checking with similarity checking against existing tsumego.
+- Focus: whether the start position is already alive, whether multiple first moves solve, whether the intended move count matches the current app behavior, and whether the candidate repeats an existing eye-making idea, vital point, or local topology after translation, reflection, rotation, or light decoration.
 
 Add more agents only when there is a concrete reason. Good optional additions:
 
@@ -75,15 +65,12 @@ Every agent should return concise, structured results.
 - intended correct line
 - why the final black group is alive
 
-`Stone Economy Auditor` must return:
+`Tactical Auditor` must return:
 
 - which stones are necessary
 - which stones can be removed
 - which white stones look thin but are actually required to stop Black from killing White
 - whether the setup still feels natural after trimming
-
-`White Attack Verifier` must return:
-
 - at least one wrong black move
 - White's best reply or reply sequence
 - whether White occupies the vital point when appropriate
@@ -91,14 +78,11 @@ Every agent should return concise, structured results.
 - whether the auto-White behavior in the app is acceptable or needs code adjustment
 - user-facing move references in `x-y` notation when reporting points
 
-`Ambiguity Checker` must return:
+`Uniqueness Auditor` must return:
 
 - whether the start is already alive
 - whether alternate correct moves exist
 - whether the current implementation can truly judge the requested move count
-
-`Similarity Checker` must return:
-
 - which existing problems are the closest matches
 - whether the candidate is effectively the same shape after translation, reflection, rotation, or light decoration
 - whether the life-making idea and vital point are too similar even if the stone coordinates differ
@@ -108,9 +92,9 @@ Every agent should return concise, structured results.
 
 1. Main agent reads the current relevant puzzle data and user constraints.
 2. Main agent reads nearby existing problems in `tsumego-data.js` before delegating.
-3. Main agent spawns the 5 default agents in parallel.
+3. Main agent spawns the 3 default agents in parallel.
 4. Main agent waits for enough results to choose the best candidate.
-5. If the `Similarity Checker` says the candidate is too similar, reject it and loop back to puzzle design before editing files.
+5. If the `Uniqueness Auditor` says the candidate is too similar or too ambiguous, reject it and loop back to puzzle design before editing files.
 6. Main agent synthesizes one final puzzle shape.
 7. Main agent updates `tsumego-data.js`, any related text, and validation checks.
 

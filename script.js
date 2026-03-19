@@ -1069,18 +1069,22 @@ function formatCellLabel(value, row, col) {
 }
 
 function sanitizeLayoutPreference(layoutPreference) {
-  return layoutPreference === LAYOUT_BOARD_TOP ? LAYOUT_BOARD_TOP : LAYOUT_TEXT_TOP;
+  if (layoutPreference === LAYOUT_TEXT_TOP || layoutPreference === LAYOUT_BOARD_TOP) {
+    return layoutPreference;
+  }
+
+  return LAYOUT_BOARD_TOP;
 }
 
 function getStoredLayoutPreference() {
   if (typeof localStorage === "undefined") {
-    return LAYOUT_TEXT_TOP;
+    return LAYOUT_BOARD_TOP;
   }
 
   try {
     return sanitizeLayoutPreference(localStorage.getItem(LAYOUT_STORAGE_KEY));
   } catch (error) {
-    return LAYOUT_TEXT_TOP;
+    return LAYOUT_BOARD_TOP;
   }
 }
 

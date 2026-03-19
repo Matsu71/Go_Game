@@ -8,11 +8,16 @@
 </head>
 <body>
   <main class="app">
-    <section class="panel">
-      <h1>囲碁ミニアプリ</h1>
-      <div class="layout-switcher">
-        <button id="layout-toggle-button" class="layout-toggle-button" type="button">上下切り替え</button>
-      </div>
+    <header class="app-header">
+      <h1 id="app-title">囲碁ミニアプリ</h1>
+      <button id="mode-toggle-button" class="mode-toggle-button" type="button">ミニ詰碁</button>
+    </header>
+
+    <div class="layout-switcher">
+      <button id="layout-toggle-button" class="layout-toggle-button" type="button">上下切り替え</button>
+    </div>
+
+    <section id="game-panel" class="panel">
       <div class="size-switcher" aria-label="盤サイズ切り替え">
         <button id="size-5" class="size-button active" type="button" data-size="5" aria-pressed="true">5路盤</button>
         <button id="size-6" class="size-button" type="button" data-size="6" aria-pressed="false">6路盤</button>
@@ -35,11 +40,35 @@
 中国ルールで、最終判定は盤上の石数と地で計算します。</p>
     </section>
 
-    <section id="board-wrap" class="board-wrap" aria-label="5路盤">
+    <section id="game-board-wrap" class="board-wrap" aria-label="5路盤">
       <div id="board" class="board size-5" role="grid" aria-label="5×5の囲碁盤"></div>
+    </section>
+
+    <section id="tsumego-panel" class="panel" hidden>
+      <p class="problem-tag">第1問</p>
+      <p id="tsumego-title" class="status">6路盤の1手詰めです。</p>
+      <div id="tsumego-problem-switcher" class="problem-switcher" aria-label="詰碁の問題切り替え"></div>
+      <p id="tsumego-message" class="message" aria-live="polite">黒番です。1手で白を取ってください。</p>
+      <p id="tsumego-feedback" class="result" aria-live="polite"></p>
+      <div class="actions">
+        <button id="tsumego-reset-button" class="control-button reset-button" type="button">問題をリセット</button>
+      </div>
+      <p id="tsumego-note" class="note">今回は第1問だけ入れています。
+詰碁はすべて6路盤で作る予定です。
+黒番で1手だけ打てます。</p>
+    </section>
+
+    <section id="tsumego-board-wrap" class="board-wrap" aria-label="6路盤の詰碁" hidden>
+      <div id="tsumego-board" class="board size-6" role="grid" aria-label="6×6の詰碁盤"></div>
+      <div id="tsumego-overlay" class="board-overlay" hidden aria-hidden="true"></div>
+      <div class="tsumego-nav" aria-label="前後の問題へ移動">
+        <button id="tsumego-prev-button" class="tsumego-nav-button" type="button" aria-label="前の問題へ">&lt;</button>
+        <button id="tsumego-next-button" class="tsumego-nav-button" type="button" aria-label="次の問題へ">&gt;</button>
+      </div>
     </section>
   </main>
 
+  <script src="./tsumego-data.js"></script>
   <script src="./script.js"></script>
 </body>
 </html>

@@ -17,7 +17,6 @@ const APP_MODE_GAME = "game";
 const APP_MODE_TSUMEGO = "tsumego";
 const TSUMEGO_DATA_KEY = "GO_APP_TSUMEGO_DATA";
 const TSUMEGO_DATA = getTsumegoData();
-const TSUMEGO_BOARD_SIZE = TSUMEGO_DATA.boardSize;
 const TSUMEGO_PROBLEMS = TSUMEGO_DATA.problems.map(normalizeTsumegoProblem);
 
 function createBoardFromRows(rows) {
@@ -40,20 +39,67 @@ function getTsumegoData() {
   const data = typeof globalThis !== "undefined" ? globalThis[TSUMEGO_DATA_KEY] : null;
 
   if (!data || !Array.isArray(data.problems) || data.problems.length === 0) {
-    throw new Error("tsumego-data.js の読み込みに失敗しました。");
+    throw new Error("詰碁データの読み込みに失敗しました。");
   }
 
   return data;
 }
 
+function getPrimaryWinningMove(problem) {
+  if (Array.isArray(problem.solution)) {
+    return problem.solution;
+  }
+
+  const winningFirstMoves = problem.solutions?.winningFirstMoves;
+  if (!Array.isArray(winningFirstMoves) || winningFirstMoves.length === 0) {
+    return null;
+  }
+
+  const primaryEntry =
+    winningFirstMoves.find((entry) => entry && entry.isPrimary && Array.isArray(entry.move)) ||
+    winningFirstMoves.find((entry) => entry && Array.isArray(entry.move));
+
+  return primaryEntry ? primaryEntry.move : null;
+}
+
+function getPrincipalVariation(problem) {
+  if (!Array.isArray(problem.solutions?.principalVariation)) {
+    return [];
+  }
+
+  return problem.solutions.principalVariation;
+}
+
+function getTsumegoShortestWinLength(problem) {
+  if (Number.isInteger(problem.verification?.shortestWinLength) && problem.verification.shortestWinLength > 0) {
+    return problem.verification.shortestWinLength;
+  }
+
+  const principalVariation = getPrincipalVariation(problem);
+  return principalVariation.length > 0 ? principalVariation.length : 1;
+}
+
+function hasGuidedTsumegoLine(problem) {
+  return getPrincipalVariation(problem).length > 1;
+}
+
 function normalizeTsumegoProblem(problem) {
+  const boardSize = problem.boardSize ?? TSUMEGO_DATA.boardSize;
+
   return {
     ...problem,
+    boardSize,
     goalType: problem.goalType ?? "capture",
-    prompt: problem.prompt ?? TSUMEGO_DATA.defaultPrompt,
-    note: problem.note ?? TSUMEGO_DATA.defaultNote,
+    subtitle: problem.subtitle ?? problem.ui?.subtitle ?? "",
+    prompt: problem.prompt ?? problem.ui?.prompt ?? TSUMEGO_DATA.defaultPrompt,
+    note: problem.note ?? problem.ui?.note ?? TSUMEGO_DATA.defaultNote,
+    solution: getPrimaryWinningMove(problem),
     board: createBoardFromRows(problem.rows)
   };
+}
+
+function getTsumegoBoardSize(problem) {
+  return problem.boardSize ?? TSUMEGO_DATA.boardSize;
 }
 
 function createEmptyBoard(boardSize) {
@@ -103,7 +149,8 @@ function createTsumegoState(problemId = TSUMEGO_PROBLEMS[0].id) {
     phase: "initial",
     overlay: null,
     pendingAutoWhite: null,
-    autoWhiteEnabled: false
+    autoWhiteEnabled: false,
+    lineProgress: 0
   };
 }
 
@@ -572,6 +619,74 @@ function isSameMove(moveA, moveB) {
   return Array.isArray(moveA) && Array.isArray(moveB) && moveA[0] === moveB[0] && moveA[1] === moveB[1];
 }
 
+function createTsumegoSuccessMessage(problem) {
+  if (problem.goalType === "live") {
+    if (getTsumegoShortestWinLength(problem) > 1) {
+      return `正解です。${getTsumegoShortestWinLength(problem)}手で黒が2眼で生きました。\nこの局面から続きを打って確認できます。`;
+    }
+
+    return "正解です。黒が2眼で生きました。\nこの局面から続きを打って確認できます。";
+  }
+
+  if (problem.goalType === "kill" && getTsumegoShortestWinLength(problem) > 1) {
+    return `正解です。${getTsumegoShortestWinLength(problem)}手で白を殺しました。\nこの局面から続きを打って確認できます。`;
+  }
+
+  return "正解です。白を取りました。\nこの局面から続きを打って確認できます。";
+}
+
+function createTsumegoSuccessFeedback(problem) {
+  if (problem.goalType === "live") {
+    if (getTsumegoShortestWinLength(problem) > 1) {
+      return "白の応手を読んで2眼を完成させました。";
+    }
+
+    return "この1手で2眼を作れました。";
+  }
+
+  if (problem.goalType === "kill" && getTsumegoShortestWinLength(problem) > 1) {
+    return "白の逃げ道をふさいで仕留めました。";
+  }
+
+  return "この1手で白が取れました。";
+}
+
+function createTsumegoFailureFeedback(problem) {
+  return `この問題は${getTsumegoShortestWinLength(problem)}手詰めです。`;
+}
+
+function createGuidedAutoWhiteMessage(problem, hasFinalBlackMove) {
+  if (problem.goalType === "live") {
+    return hasFinalBlackMove
+      ? "白が応手しました。\n黒番で最後の1手を打って黒を生かしてください。"
+      : "白が応手しました。\n黒番で続きを打って黒を生かしてください。";
+  }
+
+  if (problem.goalType === "kill") {
+    return hasFinalBlackMove
+      ? "白が最強に応じました。\n黒番でトドメの1手を打ってください。"
+      : "白が最強に応じました。\n黒番で続きを打ってください。";
+  }
+
+  return hasFinalBlackMove
+    ? "白が応手しました。\n黒番で最後の1手を打ってください。"
+    : "白が応手しました。\n黒番で続きを打ってください。";
+}
+
+function createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove) {
+  if (problem.goalType === "live") {
+    return hasFinalBlackMove
+      ? "白の応手まで進みました。最後の黒で2眼を完成させてください。"
+      : "白の応手まで進みました。";
+  }
+
+  if (problem.goalType === "kill") {
+    return hasFinalBlackMove ? "白の最強応手まで進みました。" : "白の応手まで進みました。";
+  }
+
+  return "白の応手まで進みました。";
+}
+
 function getTsumegoTargetColor(problem) {
   return problem.goalType === "live" ? BLACK : WHITE;
 }
@@ -666,7 +781,8 @@ function createTsumegoGameState(tsumegoState, currentPlayer = tsumegoState.curre
 function chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem) {
   const currentGroups = collectTsumegoTargetGroups(tsumegoState.board, problem);
   const currentTargetCount = getRemainingTsumegoTargetStones(tsumegoState.board, problem).length;
-  const solutionKey = Array.isArray(problem.solution) ? toKey(problem.solution[0], problem.solution[1]) : null;
+  const primaryWinningMove = getPrimaryWinningMove(problem);
+  const solutionKey = Array.isArray(primaryWinningMove) ? toKey(primaryWinningMove[0], primaryWinningMove[1]) : null;
 
   if (currentGroups.length === 0 || currentTargetCount === 0) {
     return null;
@@ -738,6 +854,58 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
   };
 }
 
+function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
+  const principalVariation = getPrincipalVariation(problem);
+  const whiteEntry = principalVariation[tsumegoState.lineProgress];
+
+  if (!whiteEntry || whiteEntry.player !== WHITE || !Array.isArray(whiteEntry.move)) {
+    return null;
+  }
+
+  const moveResult = attemptMove(
+    createTsumegoGameState(
+      {
+        ...tsumegoState,
+        currentPlayer: WHITE
+      },
+      WHITE
+    ),
+    whiteEntry.move[0],
+    whiteEntry.move[1]
+  );
+
+  if (!moveResult.valid) {
+    return null;
+  }
+
+  const nextLineProgress = tsumegoState.lineProgress + 1;
+  const nextEntry = principalVariation[nextLineProgress];
+  const promptForBlack = nextEntry && nextEntry.player === BLACK;
+  const remainingBlackMoves = principalVariation
+    .slice(nextLineProgress)
+    .filter((entry) => entry.player === BLACK).length;
+  const hasFinalBlackMove = promptForBlack && remainingBlackMoves === 1;
+
+  return {
+    board: moveResult.nextState.board,
+    previousBoard: moveResult.nextState.previousBoard,
+    currentPlayer: moveResult.nextState.currentPlayer,
+    captures: moveResult.nextState.captures,
+    autoWhiteEnabled: false,
+    lineProgress: nextLineProgress,
+    solved: false,
+    failed: false,
+    overlay: null,
+    phase: promptForBlack ? "guided-play" : "free-play",
+    message: promptForBlack
+      ? createGuidedAutoWhiteMessage(problem, hasFinalBlackMove)
+      : "白が応手しました。\nこの局面から続きを打って確認できます。",
+    feedback: promptForBlack
+      ? createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove)
+      : "白の応手まで自動で進めました。"
+  };
+}
+
 function queueAutoWhiteStep(tsumegoState, problem, waitingMessage, waitingFeedback) {
   const pendingAutoWhite = createPendingAutoWhiteStep(tsumegoState, problem);
 
@@ -750,6 +918,29 @@ function queueAutoWhiteStep(tsumegoState, problem, waitingMessage, waitingFeedba
       autoWhiteEnabled: false,
       message: "不正解です。\nこの局面から続きを打って確認できます。",
       feedback: "白の自動応手はここで止まりました。"
+    };
+  }
+
+  return {
+    ...tsumegoState,
+    phase: "awaiting-auto-white",
+    pendingAutoWhite,
+    message: waitingMessage,
+    feedback: waitingFeedback
+  };
+}
+
+function queueGuidedAutoWhiteStep(tsumegoState, problem, waitingMessage, waitingFeedback) {
+  const pendingAutoWhite = createPendingGuidedAutoWhiteStep(tsumegoState, problem);
+
+  if (!pendingAutoWhite) {
+    return {
+      ...tsumegoState,
+      phase: "free-play",
+      pendingAutoWhite: null,
+      autoWhiteEnabled: false,
+      message: "正しい筋でしたが、白の自動応手を進められませんでした。\nこの局面から続きを打って確認できます。",
+      feedback: "主変化の白応手を再現できませんでした。"
     };
   }
 
@@ -775,9 +966,13 @@ function applyPendingTsumegoAutoWhite(tsumegoState) {
     captures: tsumegoState.pendingAutoWhite.captures,
     message: tsumegoState.pendingAutoWhite.message,
     feedback: tsumegoState.pendingAutoWhite.feedback,
-    phase: "free-play",
+    solved: tsumegoState.pendingAutoWhite.solved ?? tsumegoState.solved,
+    failed: tsumegoState.pendingAutoWhite.failed ?? tsumegoState.failed,
+    overlay: tsumegoState.pendingAutoWhite.overlay ?? tsumegoState.overlay,
+    phase: tsumegoState.pendingAutoWhite.phase ?? "free-play",
     pendingAutoWhite: null,
-    autoWhiteEnabled: tsumegoState.pendingAutoWhite.autoWhiteEnabled
+    autoWhiteEnabled: tsumegoState.pendingAutoWhite.autoWhiteEnabled ?? false,
+    lineProgress: tsumegoState.pendingAutoWhite.lineProgress ?? tsumegoState.lineProgress
   };
 }
 
@@ -836,6 +1031,110 @@ function attemptTsumegoMove(tsumegoState, row, col) {
     };
   }
 
+  if (hasGuidedTsumegoLine(problem)) {
+    const principalVariation = getPrincipalVariation(problem);
+    const expectedEntry = principalVariation[tsumegoState.lineProgress];
+    const moveMatchesLine = expectedEntry?.player === BLACK && isSameMove([row, col], expectedEntry.move);
+
+    if (!moveMatchesLine) {
+      if (problem.goalType === "live") {
+        return {
+          valid: true,
+          nextState: queueAutoWhiteStep(
+            {
+              ...tsumegoState,
+              board: moveResult.nextState.board,
+              previousBoard: moveResult.nextState.previousBoard,
+              currentPlayer: WHITE,
+              captures: moveResult.nextState.captures,
+              solved: false,
+              failed: true,
+              overlay: "failure",
+              autoWhiteEnabled: true
+            },
+            problem,
+            "不正解です。0.5秒後に白が応手します。",
+            createTsumegoFailureFeedback(problem)
+          )
+        };
+      }
+
+      return {
+        valid: true,
+        nextState: {
+          ...tsumegoState,
+          board: moveResult.nextState.board,
+          previousBoard: moveResult.nextState.previousBoard,
+          currentPlayer: moveResult.nextState.currentPlayer,
+          captures: moveResult.nextState.captures,
+          message: "不正解です。\nこの局面から続きを打って確認できます。",
+          feedback: createTsumegoFailureFeedback(problem),
+          solved: false,
+          failed: true,
+          phase: "free-play",
+          overlay: "failure",
+          pendingAutoWhite: null,
+          autoWhiteEnabled: false
+        }
+      };
+    }
+
+    const progressedState = {
+      ...tsumegoState,
+      board: moveResult.nextState.board,
+      previousBoard: moveResult.nextState.previousBoard,
+      currentPlayer: moveResult.nextState.currentPlayer,
+      captures: moveResult.nextState.captures,
+      lineProgress: tsumegoState.lineProgress + 1
+    };
+    const nextEntry = principalVariation[progressedState.lineProgress];
+    const solved = isTsumegoSolved(moveResult.nextState.board, problem);
+
+    if (!nextEntry && solved) {
+      return {
+        valid: true,
+        nextState: {
+          ...progressedState,
+          message: createTsumegoSuccessMessage(problem),
+          feedback: createTsumegoSuccessFeedback(problem),
+          solved: true,
+          failed: false,
+          phase: "free-play",
+          overlay: "success",
+          pendingAutoWhite: null,
+          autoWhiteEnabled: false
+        }
+      };
+    }
+
+    if (nextEntry?.player === WHITE) {
+      return {
+        valid: true,
+        nextState: queueGuidedAutoWhiteStep(
+          progressedState,
+          problem,
+          "正しい筋です。0.5秒後に白が応手します。",
+          "白の応手を自動で進めます。"
+        )
+      };
+    }
+
+    return {
+      valid: true,
+      nextState: {
+        ...progressedState,
+        message: solved ? createTsumegoSuccessMessage(problem) : "正しい筋です。\nこの局面から続きを打って確認できます。",
+        feedback: solved ? createTsumegoSuccessFeedback(problem) : "この局面から続きを読んで確認できます。",
+        solved,
+        failed: false,
+        phase: "guided-play",
+        overlay: solved ? "success" : null,
+        pendingAutoWhite: null,
+        autoWhiteEnabled: false
+      }
+    };
+  }
+
   if (problem.goalType === "live") {
     if (isTsumegoSolved(moveResult.nextState.board, problem)) {
       return {
@@ -846,8 +1145,8 @@ function attemptTsumegoMove(tsumegoState, row, col) {
           previousBoard: moveResult.nextState.previousBoard,
           currentPlayer: moveResult.nextState.currentPlayer,
           captures: moveResult.nextState.captures,
-          message: "正解です。黒が2眼で生きました。\nこの局面から続きを打って確認できます。",
-          feedback: "この1手で2眼を作れました。",
+          message: createTsumegoSuccessMessage(problem),
+          feedback: createTsumegoSuccessFeedback(problem),
           solved: true,
           failed: false,
           phase: "free-play",
@@ -890,8 +1189,8 @@ function attemptTsumegoMove(tsumegoState, row, col) {
         previousBoard: moveResult.nextState.previousBoard,
         currentPlayer: moveResult.nextState.currentPlayer,
         captures: moveResult.nextState.captures,
-        message: "正解です。白を取りました。\nこの局面から続きを打って確認できます。",
-        feedback: "この1手で白が取れました。",
+        message: createTsumegoSuccessMessage(problem),
+        feedback: createTsumegoSuccessFeedback(problem),
         solved: true,
         failed: false,
         phase: "free-play",
@@ -911,7 +1210,7 @@ function attemptTsumegoMove(tsumegoState, row, col) {
       currentPlayer: moveResult.nextState.currentPlayer,
       captures: moveResult.nextState.captures,
       message: "不正解です。\nこの局面から続きを打って確認できます。",
-      feedback: "今回は1手詰めです。",
+      feedback: createTsumegoFailureFeedback(problem),
       solved: false,
       failed: true,
       phase: "free-play",
@@ -1139,6 +1438,7 @@ function initializeApp() {
   let layoutPreference = getStoredLayoutPreference();
   let tsumegoState = createTsumegoState();
   let tsumegoAutoWhiteTimeoutId = null;
+  let currentTsumegoBoardSize = null;
 
   function getCurrentBoardSize() {
     return getBoardSize(state.board);
@@ -1264,17 +1564,30 @@ function initializeApp() {
     );
   }
 
-  function buildTsumegoBoard() {
-    const problem = getCurrentTsumegoProblem();
+  function buildTsumegoBoard(problem = getCurrentTsumegoProblem()) {
+    const boardSize = getTsumegoBoardSize(problem);
+    currentTsumegoBoardSize = boardSize;
 
     buildBoardGrid(
       tsumegoBoardElement,
       tsumegoBoardWrapElement,
-      TSUMEGO_BOARD_SIZE,
+      boardSize,
       handleTsumegoMove,
-      `${TSUMEGO_BOARD_SIZE}×${TSUMEGO_BOARD_SIZE}の詰碁盤`,
+      `${boardSize}×${boardSize}の詰碁盤`,
       `${problem.title}の詰碁盤`
     );
+  }
+
+  function syncTsumegoBoard(problem = getCurrentTsumegoProblem()) {
+    const boardSize = getTsumegoBoardSize(problem);
+
+    if (currentTsumegoBoardSize !== boardSize || tsumegoBoardElement.childElementCount !== boardSize * boardSize) {
+      buildTsumegoBoard(problem);
+      return;
+    }
+
+    tsumegoBoardElement.setAttribute("aria-label", `${boardSize}×${boardSize}の詰碁盤`);
+    tsumegoBoardWrapElement.setAttribute("aria-label", `${problem.title}の詰碁盤`);
   }
 
   function renderBoardCells(targetBoardElement, boardState, disabled) {
@@ -1423,6 +1736,7 @@ function initializeApp() {
   function renderTsumego() {
     const problem = getCurrentTsumegoProblem();
     const tsumegoBoardDisabled = tsumegoState.phase === "awaiting-auto-white";
+    syncTsumegoBoard(problem);
 
     if (tsumegoProblemTagElement) {
       tsumegoProblemTagElement.textContent = problem.title;
@@ -1535,7 +1849,7 @@ function initializeApp() {
 
   buildGameBoard(getCurrentBoardSize());
   buildTsumegoProblemButtons();
-  buildTsumegoBoard();
+  syncTsumegoBoard();
 
   undoButton.addEventListener("click", handleUndo);
   redoButton.addEventListener("click", handleRedo);

@@ -1,0 +1,458 @@
+#!/usr/bin/env node
+
+globalThis.document = undefined;
+
+const {
+  CANONICAL_PATH,
+  SOLVER_EXPORT_PATH,
+  WEB_EXPORT_PATH,
+  buildSolverExport,
+  buildWebExport,
+  flattenTargetStones,
+  getProblemRows,
+  loadCanonicalData,
+  readJson
+} = require("./lib/tsumego-data-utils");
+
+const GO_APP_TSUMEGO_DATA_KEY = "GO_APP_TSUMEGO_DATA";
+const errors = [];
+const warnings = [];
+
+function addError(message) {
+  errors.push(message);
+}
+
+function addWarning(message) {
+  warnings.push(message);
+}
+
+function isIntegerPair(value) {
+  return Array.isArray(value) && value.length === 2 && Number.isInteger(value[0]) && Number.isInteger(value[1]);
+}
+
+function sameMove(moveA, moveB) {
+  return Array.isArray(moveA) && Array.isArray(moveB) && moveA[0] === moveB[0] && moveA[1] === moveB[1];
+}
+
+function pointKey(row, col) {
+  return `${row},${col}`;
+}
+
+function inBounds(row, col, boardSize) {
+  return row >= 0 && row < boardSize && col >= 0 && col < boardSize;
+}
+
+function readBoardCell(rows, row, col) {
+  const cell = rows[row][col];
+
+  if (cell === "B" || cell === "W") {
+    return cell;
+  }
+
+  return ".";
+}
+
+function getExpectedTargetCell(problem) {
+  return problem.target?.color === "black" ? "B" : "W";
+}
+
+function normalizeMoveList(moves) {
+  return moves.map((move) => JSON.stringify(move)).sort();
+}
+
+function loadGeneratedWebData() {
+  delete globalThis[GO_APP_TSUMEGO_DATA_KEY];
+  const modulePath = require.resolve(WEB_EXPORT_PATH);
+  delete require.cache[modulePath];
+  require(modulePath);
+  return globalThis[GO_APP_TSUMEGO_DATA_KEY];
+}
+
+function loadScriptApi() {
+  loadGeneratedWebData();
+  const modulePath = require.resolve("../script.js");
+  delete require.cache[modulePath];
+  return require(modulePath);
+}
+
+function collectWinningMoves(app, problem) {
+  const state = app.createTsumegoState(problem.id);
+  const boardSize = problem.boardSize;
+  const winningMoves = [];
+  const legalMoves = [];
+
+  for (let row = 0; row < boardSize; row += 1) {
+    for (let col = 0; col < boardSize; col += 1) {
+      const result = app.attemptTsumegoMove(state, row, col);
+      if (!result.valid) {
+        continue;
+      }
+
+      legalMoves.push([row, col]);
+      if (
+        result.nextState &&
+        (result.nextState.solved || (result.nextState.phase === "awaiting-auto-white" && result.nextState.failed !== true))
+      ) {
+        winningMoves.push([row, col]);
+      }
+    }
+  }
+
+  return { winningMoves, legalMoves };
+}
+
+function cloneValidationState(state) {
+  return {
+    board: state.board.map((row) => row.slice()),
+    previousBoard: state.previousBoard ? state.previousBoard.map((row) => row.slice()) : null,
+    currentPlayer: state.currentPlayer,
+    captures: { ...state.captures },
+    consecutivePasses: 0,
+    gameOver: false,
+    result: null,
+    message: state.message
+  };
+}
+
+function countStones(board, color) {
+  let count = 0;
+
+  board.forEach((row) => {
+    row.forEach((cell) => {
+      if (cell === color) {
+        count += 1;
+      }
+    });
+  });
+
+  return count;
+}
+
+function collectBlackThreatMovesAfterWhiteReply(app, state, problem) {
+  const whiteCount = countStones(state.board, app.WHITE);
+  const threatMoves = [];
+
+  for (let row = 0; row < problem.boardSize; row += 1) {
+    for (let col = 0; col < problem.boardSize; col += 1) {
+      const result = app.attemptMove(cloneValidationState(state), row, col);
+      if (!result.valid) {
+        continue;
+      }
+
+      const whiteCaptured = whiteCount - countStones(result.nextState.board, app.WHITE);
+      const blackLives = app.isTsumegoLiveByTwoEyes(result.nextState.board, problem);
+
+      if (whiteCaptured > 0 || blackLives) {
+        threatMoves.push({
+          move: [row, col],
+          whiteCaptured,
+          blackLives
+        });
+      }
+    }
+  }
+
+  return threatMoves;
+}
+
+function validateLiveProblemDefense(app, state, problem, wrongLegalMoves, label) {
+  const openingAnalysis = app.analyzeBoard(state.board);
+  const whiteAtariGroups = openingAnalysis.groups.filter((group) => group.color === app.WHITE && group.liberties.size <= 1);
+  const hasGuidedLine = Array.isArray(problem.solutions?.principalVariation) && problem.solutions.principalVariation.length > 1;
+
+  if (whiteAtariGroups.length > 0) {
+    addError(
+      `[${label}] live problem starts with white group in atari: ${JSON.stringify(
+        whiteAtariGroups.map((group) => group.stones)
+      )}.`
+    );
+  }
+
+  const initialWhiteCount = countStones(state.board, app.WHITE);
+
+  wrongLegalMoves.forEach((move) => {
+    const [firstRow, firstCol] = move;
+    const firstResult = app.attemptMove(cloneValidationState(state), firstRow, firstCol);
+    if (!firstResult.valid) {
+      return;
+    }
+
+    const whiteCapturedOnFirstMove = initialWhiteCount - countStones(firstResult.nextState.board, app.WHITE);
+    if (whiteCapturedOnFirstMove > 0) {
+      addError(
+        `[${label}] wrong first move ${JSON.stringify(move)} captures white immediately (${whiteCapturedOnFirstMove} stones).`
+      );
+      return;
+    }
+
+    const legalWhiteReplies = [];
+    const safeWhiteReplies = [];
+
+    for (let whiteRow = 0; whiteRow < problem.boardSize; whiteRow += 1) {
+      for (let whiteCol = 0; whiteCol < problem.boardSize; whiteCol += 1) {
+        const whiteResult = app.attemptMove(cloneValidationState(firstResult.nextState), whiteRow, whiteCol);
+        if (!whiteResult.valid) {
+          continue;
+        }
+
+        const threatMoves = collectBlackThreatMovesAfterWhiteReply(app, whiteResult.nextState, problem);
+        legalWhiteReplies.push({
+          move: [whiteRow, whiteCol],
+          threatMoves
+        });
+
+        if (threatMoves.length === 0) {
+          safeWhiteReplies.push([whiteRow, whiteCol]);
+        }
+      }
+    }
+
+    if (hasGuidedLine && legalWhiteReplies.length > 1 && safeWhiteReplies.length <= 1) {
+      addError(
+        `[${label}] wrong first move ${JSON.stringify(
+          move
+        )} leaves White with only ${safeWhiteReplies.length} safe reply to avoid an immediate black life/capture threat. Safe replies: ${JSON.stringify(
+          safeWhiteReplies
+        )}.`
+      );
+    }
+  });
+}
+
+function validateCanonicalProblem(problem, index) {
+  const label = `${problem.id ?? `index-${index}`}`;
+  const boardSize = problem.boardSize;
+  const rows = getProblemRows(problem);
+
+  if (typeof problem.id !== "string" || problem.id.length === 0) {
+    addError(`[${label}] id is required.`);
+  }
+
+  if (typeof problem.title !== "string" || problem.title.length === 0) {
+    addError(`[${label}] title is required.`);
+  }
+
+  if (!Number.isInteger(boardSize) || boardSize <= 0) {
+    addError(`[${label}] boardSize must be a positive integer.`);
+  }
+
+  if (!Array.isArray(rows) || rows.length !== boardSize) {
+    addError(`[${label}] initialPosition.rows must contain exactly ${boardSize} strings.`);
+    return;
+  }
+
+  rows.forEach((rowText, rowIndex) => {
+    if (typeof rowText !== "string" || rowText.length !== boardSize) {
+      addError(`[${label}] row ${rowIndex} must be a string of length ${boardSize}.`);
+      return;
+    }
+
+    if (!/^[.BW]+$/.test(rowText)) {
+      addError(`[${label}] row ${rowIndex} contains characters other than ., B, W.`);
+    }
+  });
+
+  if (!["black", "white"].includes(problem.turn)) {
+    addError(`[${label}] turn must be "black" or "white".`);
+  }
+
+  if (!["capture", "live", "kill"].includes(problem.goalType)) {
+    addError(`[${label}] goalType must be "capture", "live", or "kill".`);
+  }
+
+  if (!problem.constraints || typeof problem.constraints !== "object") {
+    addError(`[${label}] constraints is required.`);
+  }
+
+  if (!Array.isArray(problem.target?.groups) || problem.target.groups.length === 0) {
+    addError(`[${label}] target.groups must contain at least one group.`);
+  } else {
+    const expectedCell = getExpectedTargetCell(problem);
+    const seenTargets = new Set();
+
+    flattenTargetStones(problem).forEach((stone, targetIndex) => {
+      if (!isIntegerPair(stone)) {
+        addError(`[${label}] target stone ${targetIndex} must be [row, col].`);
+        return;
+      }
+
+      const [row, col] = stone;
+      if (!inBounds(row, col, boardSize)) {
+        addError(`[${label}] target stone ${targetIndex} is out of bounds: [${row}, ${col}].`);
+        return;
+      }
+
+      const key = pointKey(row, col);
+      if (seenTargets.has(key)) {
+        addError(`[${label}] target contains a duplicate point: [${row}, ${col}].`);
+      }
+      seenTargets.add(key);
+
+      if (readBoardCell(rows, row, col) !== expectedCell) {
+        addError(`[${label}] target stone [${row}, ${col}] must start as ${problem.target.color}.`);
+      }
+    });
+  }
+
+  if (!problem.solutions || typeof problem.solutions !== "object") {
+    addError(`[${label}] solutions is required.`);
+    return;
+  }
+
+  if (!Array.isArray(problem.solutions.winningFirstMoves) || problem.solutions.winningFirstMoves.length === 0) {
+    addError(`[${label}] solutions.winningFirstMoves must contain at least one move.`);
+  } else {
+    problem.solutions.winningFirstMoves.forEach((entry, moveIndex) => {
+      if (!entry || !isIntegerPair(entry.move)) {
+        addError(`[${label}] winningFirstMoves[${moveIndex}].move must be [row, col].`);
+        return;
+      }
+
+      const [row, col] = entry.move;
+      if (!inBounds(row, col, boardSize)) {
+        addError(`[${label}] winningFirstMoves[${moveIndex}] is out of bounds: [${row}, ${col}].`);
+      } else if (readBoardCell(rows, row, col) !== ".") {
+        addError(`[${label}] winningFirstMoves[${moveIndex}] must point to an empty intersection.`);
+      }
+    });
+  }
+
+  if (!problem.verification || typeof problem.verification.status !== "string") {
+    addError(`[${label}] verification.status is required.`);
+  }
+
+  if (!problem.metadata || !Array.isArray(problem.metadata.tags)) {
+    addError(`[${label}] metadata.tags is required.`);
+  }
+
+  if (!problem.ui || typeof problem.ui !== "object") {
+    addError(`[${label}] ui is required.`);
+  }
+}
+
+function validateGeneratedExports(canonicalData) {
+  const expectedWebExport = buildWebExport(canonicalData);
+  const expectedSolverExport = buildSolverExport(canonicalData);
+  const actualWebExport = loadGeneratedWebData();
+  const actualSolverExport = readJson(SOLVER_EXPORT_PATH);
+
+  if (JSON.stringify(actualWebExport) !== JSON.stringify(expectedWebExport)) {
+    addError(`Web export is stale or invalid. Regenerate it from ${CANONICAL_PATH}.`);
+  }
+
+  if (JSON.stringify(actualSolverExport) !== JSON.stringify(expectedSolverExport)) {
+    addError(`Solver export is stale or invalid. Regenerate it from ${CANONICAL_PATH}.`);
+  }
+}
+
+function validateBrowserCompatibility(canonicalData) {
+  const app = loadScriptApi();
+
+  canonicalData.problems.forEach((canonicalProblem) => {
+    const exportedProblem = app.TSUMEGO_PROBLEMS.find((problem) => problem.id === canonicalProblem.id);
+    const label = canonicalProblem.id;
+
+    if (!exportedProblem) {
+      addError(`[${label}] missing from browser export.`);
+      return;
+    }
+
+    const state = app.createTsumegoState(canonicalProblem.id);
+    const expectedWinningMoves = canonicalProblem.solutions.winningFirstMoves.map((entry) => entry.move);
+    const { winningMoves, legalMoves } = collectWinningMoves(app, exportedProblem);
+
+    if (
+      JSON.stringify(normalizeMoveList(winningMoves)) !== JSON.stringify(normalizeMoveList(expectedWinningMoves))
+    ) {
+      addError(
+        `[${label}] browser-winning first moves ${JSON.stringify(winningMoves)} do not match canonical ${JSON.stringify(
+          expectedWinningMoves
+        )}.`
+      );
+    }
+
+    if (canonicalProblem.solutions.isUniqueFirstMove && winningMoves.length !== 1) {
+      addError(`[${label}] canonical marks a unique first move, but browser export has ${winningMoves.length} winning moves.`);
+    }
+
+    if (
+      canonicalProblem.solutions.isUniqueFirstMove &&
+      expectedWinningMoves.length === 1 &&
+      !sameMove(expectedWinningMoves[0], exportedProblem.solution)
+    ) {
+      addError(
+        `[${label}] legacy solution ${JSON.stringify(exportedProblem.solution)} does not match the canonical primary move.`
+      );
+    }
+
+    if (canonicalProblem.goalType === "live" && app.isTsumegoLiveByTwoEyes(state.board, exportedProblem)) {
+      addError(`[${label}] live problem is already alive before the first move.`);
+    }
+
+    const wrongLegalMoves = legalMoves.filter(
+      (move) => !expectedWinningMoves.some((winningMove) => sameMove(move, winningMove))
+    );
+
+    if (wrongLegalMoves.length === 0) {
+      addWarning(`[${label}] no legal wrong first moves were found in the current browser export.`);
+    }
+
+    if (canonicalProblem.goalType === "live") {
+      validateLiveProblemDefense(app, state, exportedProblem, wrongLegalMoves, label);
+    }
+  });
+}
+
+const canonicalData = loadCanonicalData();
+
+if (!canonicalData || !Array.isArray(canonicalData.problems)) {
+  addError(`Canonical tsumego data could not be loaded from ${CANONICAL_PATH}.`);
+} else {
+  if (!Number.isInteger(canonicalData.schemaVersion) || canonicalData.schemaVersion <= 0) {
+    addError("schemaVersion must be a positive integer.");
+  }
+
+  if (!canonicalData.dataset || typeof canonicalData.dataset.id !== "string") {
+    addError("dataset.id is required.");
+  }
+
+  const seenIds = new Set();
+  const seenTitles = new Set();
+
+  canonicalData.problems.forEach((problem, index) => {
+    if (typeof problem.id === "string") {
+      if (seenIds.has(problem.id)) {
+        addError(`[${problem.id}] duplicate problem id.`);
+      }
+      seenIds.add(problem.id);
+    }
+
+    if (typeof problem.title === "string") {
+      if (seenTitles.has(problem.title)) {
+        addWarning(`[${problem.id ?? `index-${index}`}] duplicate title "${problem.title}".`);
+      }
+      seenTitles.add(problem.title);
+    }
+
+    validateCanonicalProblem(problem, index);
+  });
+
+  validateGeneratedExports(canonicalData);
+  validateBrowserCompatibility(canonicalData);
+}
+
+if (errors.length > 0) {
+  console.error("Tsumego validation failed.");
+  errors.forEach((message) => {
+    console.error(`ERROR: ${message}`);
+  });
+  warnings.forEach((message) => {
+    console.error(`WARN: ${message}`);
+  });
+  process.exitCode = 1;
+} else {
+  console.log(`Tsumego validation passed for ${canonicalData.problems.length} canonical problems.`);
+  warnings.forEach((message) => {
+    console.log(`WARN: ${message}`);
+  });
+}

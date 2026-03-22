@@ -1,0 +1,13 @@
+{
+  "name": "go-mini-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static Go mini app with canonical tsumego data exports",
+  "scripts": {
+    "build:tsumego": "node scripts/build-tsumego-exports.js",
+    "validate:tsumego": "node scripts/validate-tsumego.js",
+    "refresh:tsumego": "npm run build:tsumego && npm run validate:tsumego",
+    "check:script": "node --check script.js",
+    "check": "npm run validate:tsumego && npm run check:script"
+  }
+}

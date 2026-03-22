@@ -1,6 +1,6 @@
 ---
 name: tsumego-black-live-6x6
-description: Reference guidance for creating or revising 6x6 tsumego in this project where Black to play must live, usually by making two eyes. Prefer the companion skill `tsumego-black-live-6x6-multi-agent` by default for actual puzzle creation or revision work.
+description: Reference guidance for creating or revising 6x6 tsumego in this project where Black to play must live, usually by making two eyes. Use the canonical tsumego dataset workflow and prefer the companion skill `tsumego-black-live-6x6-multi-agent` by default for actual puzzle creation or revision work.
 ---
 
 # 6x6 Black-Live Tsumego
@@ -29,6 +29,29 @@ Start from the final living black shape, not from a random surrounded position.
 - First identify the smallest natural black shape that is alive.
 - Prefer edge or corner use when searching for a minimal two-eye shape.
 - If the minimal shape is unclear, search programmatically before editing problem data.
+
+## Data workflow
+
+This project no longer treats `tsumego-data.js` as the source of truth.
+
+- The only master data is `data/canonical/tsumego-canonical.json`.
+- Browser data is generated into `data/export/web/tsumego-data.js`.
+- Solver and CLI data is generated into `data/export/solver/tsumego-problems.json`.
+- When adding or revising a puzzle, edit canonical first, then regenerate exports, then validate.
+
+Use this sequence:
+
+```bash
+npm run build:tsumego
+npm run validate:tsumego
+```
+
+If `npm` is not convenient, the underlying commands are:
+
+```bash
+node scripts/build-tsumego-exports.js
+node scripts/validate-tsumego.js
+```
 
 ## Problem-building workflow
 
@@ -67,34 +90,37 @@ Start from the final living black shape, not from a random surrounded position.
 
 6. Check similarity against existing problems.
 
-- Compare the candidate with existing entries in `tsumego-data.js`.
+- Compare the candidate with existing entries in `data/canonical/tsumego-canonical.json`.
 - Treat mirrored, shifted, rotated, or lightly decorated versions of the same local idea as too similar.
 - If the vital point and eye-making idea match an existing problem too closely, rebuild the candidate.
 
 ## Repo-specific implementation
 
-Edit `tsumego-data.js` and keep the entry explicit.
+Edit `data/canonical/tsumego-canonical.json` and keep the problem explicit.
 
-- Use `goalType: "live"`.
-- `rows` should describe the starting position.
-- `targetStones` should identify the black stones whose survival matters in the starting position.
-- `solution` is the first correct move.
-- Update the problem count or problem description in `README.md` when adding or replacing a puzzle.
+- Use `goalType: "live"` in canonical.
+- Put the start position in `initialPosition.rows`.
+- Put the target black stones under `target.groups`.
+- Put the correct first move in `solutions.winningFirstMoves`.
+- Keep UI strings in `ui`, not mixed into `metadata` or `verification`.
+- After editing canonical, regenerate exports before checking the browser UI.
+- Update `README.md` when the documented problem set or workflow changes.
 
 ## Validation checklist
 
 Run these checks after editing:
 
 ```bash
-node --check script.js
-node --check tsumego-data.js
+npm run build:tsumego
+npm run validate:tsumego
+npm run check:script
 ```
 
 Use a small Node harness for puzzle validation:
 
 ```bash
 node - <<'NODE'
-require('./tsumego-data.js');
+require('./data/export/web/tsumego-data.js');
 const go = require('./script.js');
 const problem = go.TSUMEGO_PROBLEMS.find((item) => item.id === 'problem-id');
 const result = go.attemptTsumegoMove(go.createTsumegoState('problem-id'), row, col);
@@ -119,3 +145,4 @@ The current app logic grades only the first move and then lets the user continue
 
 - If the user asks for a true 3-move or 5-move judged problem, do not pretend the current implementation already supports that.
 - Either extend the app to validate move sequences, or state clearly that only the first move is auto-judged and the rest is for study.
+- If sequence support is added later, extend canonical `solutions` and `verification` first, then update exports and UI behavior.

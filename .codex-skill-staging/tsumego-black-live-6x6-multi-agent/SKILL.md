@@ -1,6 +1,6 @@
 ---
 name: tsumego-black-live-6x6-multi-agent
-description: Use by default when creating or revising 6x6 black-to-live tsumego in this project. Coordinates a lean 3-agent workflow with puzzle design, tactical auditing, and uniqueness auditing before the main agent edits tsumego-data.js.
+description: Use by default when creating or revising 6x6 black-to-live tsumego in this project. Coordinates a lean 3-agent workflow with puzzle design, tactical auditing, and uniqueness auditing before the main agent updates canonical tsumego data and regenerates exports.
 ---
 
 # 6x6 Black-Live Tsumego Multi-Agent
@@ -27,8 +27,24 @@ Example:
 The main agent is the orchestrator and final integrator.
 
 - The main agent gathers constraints from the user.
-- The main agent keeps ownership of final edits in `tsumego-data.js` and `README.md` unless there is a clear reason to delegate a bounded patch.
+- The main agent keeps ownership of final edits in `data/canonical/tsumego-canonical.json` and any related export or docs files unless there is a clear reason to delegate a bounded patch.
 - Parallel agents should propose, audit, and verify. They should not overwrite each other's work.
+
+## Data workflow
+
+This project uses canonical-first tsumego data.
+
+- Read nearby existing problems in `data/canonical/tsumego-canonical.json`.
+- Add or revise the puzzle in canonical first.
+- Regenerate `data/export/web/tsumego-data.js` and `data/export/solver/tsumego-problems.json`.
+- Validate after regeneration before declaring the work complete.
+
+Preferred commands:
+
+```bash
+npm run build:tsumego
+npm run validate:tsumego
+```
 
 ## Default team
 
@@ -51,7 +67,7 @@ Spawn **3 agents by default**. This is the recommended baseline for cost-conscio
 
 Add more agents only when there is a concrete reason. Good optional additions:
 
-- `UI/Data Integrator`: prepares the exact `tsumego-data.js` entry text if the main agent wants a sidecar drafting pass.
+- `UI/Data Integrator`: prepares the exact canonical problem object plus any export-impact notes if the main agent wants a sidecar drafting pass.
 - `Sequence Judge Reviewer`: when the user asks for true 3-move, 5-move, or longer judged problems.
 
 ## Required outputs from each agent
@@ -60,8 +76,8 @@ Every agent should return concise, structured results.
 
 `Problem Designer` must return:
 
-- candidate `rows`
-- `targetStones`
+- candidate `initialPosition.rows`
+- `target.groups`
 - intended correct line
 - why the final black group is alive
 
@@ -91,12 +107,12 @@ Every agent should return concise, structured results.
 ## Execution order
 
 1. Main agent reads the current relevant puzzle data and user constraints.
-2. Main agent reads nearby existing problems in `tsumego-data.js` before delegating.
+2. Main agent reads nearby existing problems in `data/canonical/tsumego-canonical.json` before delegating.
 3. Main agent spawns the 3 default agents in parallel.
 4. Main agent waits for enough results to choose the best candidate.
 5. If the `Uniqueness Auditor` says the candidate is too similar or too ambiguous, reject it and loop back to puzzle design before editing files.
 6. Main agent synthesizes one final puzzle shape.
-7. Main agent updates `tsumego-data.js`, any related text, and validation checks.
+7. Main agent updates canonical data, regenerates exports, and runs validation checks.
 
 ## Validation standard
 
@@ -110,6 +126,7 @@ Do not ship a new `黒生き` puzzle until all of these are true:
 - On simple black-live problems, White's attack shape is robust enough that Black cannot easily kill White first through an obvious thin point.
 - The puzzle does not accidentally become a "capture all White" problem unless that is the explicit theme.
 - The candidate is not substantially similar to an existing problem in shape, idea, or vital point. If it is too similar, rebuild it.
+- The regenerated web and solver exports stay in sync with canonical.
 
 ## Multi-move caution
 

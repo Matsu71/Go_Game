@@ -585,18 +585,18 @@
     {
       "id": "problem-6",
       "title": "第6問",
-      "subtitle": "中に打って曲がった白の連を取る問題です。",
+      "subtitle": "上辺の大きな白一眼を1手でつぶす問題です。",
       "boardSize": 6,
       "rows": [
-        "..B...",
-        ".BWB..",
-        "BW.WB.",
-        ".BWWB.",
-        "..BB..",
+        "WWWWWW",
+        "WWW.WW",
+        "WWWWWW",
+        "BBBBBB",
+        "......",
         "......"
       ],
       "turn": "black",
-      "goalType": "capture",
+      "goalType": "kill",
       "target": {
         "type": "groups",
         "color": "white",
@@ -605,8 +605,52 @@
             "id": "main",
             "stones": [
               [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                0,
+                5
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
                 1,
                 2
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                0
               ],
               [
                 2,
@@ -614,15 +658,19 @@
               ],
               [
                 2,
-                3
-              ],
-              [
-                3,
                 2
               ],
               [
-                3,
+                2,
                 3
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                2,
+                5
               ]
             ]
           }
@@ -630,8 +678,52 @@
       },
       "targetStones": [
         [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
           1,
           2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          0
         ],
         [
           2,
@@ -639,15 +731,19 @@
         ],
         [
           2,
-          3
-        ],
-        [
-          3,
           2
         ],
         [
-          3,
+          2,
           3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          5
         ]
       ],
       "constraints": {
@@ -660,8 +756,8 @@
         "winningFirstMoves": [
           {
             "move": [
-              2,
-              2
+              1,
+              3
             ],
             "label": "main",
             "isPrimary": true
@@ -671,8 +767,8 @@
           {
             "player": "black",
             "move": [
-              2,
-              2
+              1,
+              3
             ]
           }
         ],
@@ -680,41 +776,42 @@
         "isUniqueFirstMove": true
       },
       "solution": [
-        2,
-        2
+        1,
+        3
       ],
       "verification": {
         "status": "not-strictly-verified",
         "shortestWinLength": 1,
         "nodeCount": null,
         "bestDefenseLine": [],
-        "verifiedAt": "2026-03-21",
+        "verifiedAt": "2026-03-22",
         "solverVersion": "legacy-browser-app-compat"
       },
       "metadata": {
-        "difficulty": "medium",
+        "difficulty": "easy",
         "tags": [
           "6x6",
-          "capture",
+          "kill",
           "one-move",
-          "inside-move"
+          "top-edge",
+          "fill-the-eye"
         ],
-        "source": "legacy-browser-app",
-        "author": null,
-        "createdAt": null,
-        "updatedAt": "2026-03-21"
+        "source": "user-specified-start-position",
+        "author": "Codex",
+        "createdAt": "2026-03-22",
+        "updatedAt": "2026-03-22"
       },
       "ui": {
-        "prompt": "黒番です。1手で白を取ってください。",
-        "subtitle": "中に打って曲がった白の連を取る問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
-        "hint": null,
-        "explanation": null
+        "prompt": "黒番です。1手で白を殺してください。",
+        "subtitle": "上辺の大きな白一眼を1手でつぶす問題です。",
+        "note": "第6問は黒先白死の1手詰めです。\n白全体の唯一の呼吸点を埋めてください。",
+        "hint": "白の大きな1眼の中にそのまま打ちます。",
+        "explanation": "上辺の白はすべて1つの連です。中央の1点だけが最後の呼吸点なので、黒がそこを埋めれば白全体が取れます。"
       },
-      "prompt": "黒番です。1手で白を取ってください。",
-      "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
-      "hint": null,
-      "explanation": null
+      "prompt": "黒番です。1手で白を殺してください。",
+      "note": "第6問は黒先白死の1手詰めです。\n白全体の唯一の呼吸点を埋めてください。",
+      "hint": "白の大きな1眼の中にそのまま打ちます。",
+      "explanation": "上辺の白はすべて1つの連です。中央の1点だけが最後の呼吸点なので、黒がそこを埋めれば白全体が取れます。"
     },
     {
       "id": "problem-7",

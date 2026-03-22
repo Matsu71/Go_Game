@@ -501,16 +501,16 @@
       "initialPosition": {
         "format": "rows",
         "rows": [
-          "..B...",
-          ".BWB..",
-          "BW.WB.",
-          ".BWWB.",
-          "..BB..",
+          "WWWWWW",
+          "WWW.WW",
+          "WWWWWW",
+          "BBBBBB",
+          "......",
           "......"
         ]
       },
       "turn": "black",
-      "goalType": "capture",
+      "goalType": "kill",
       "target": {
         "type": "groups",
         "color": "white",
@@ -519,8 +519,52 @@
             "id": "main",
             "stones": [
               [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                0,
+                5
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
                 1,
                 2
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                0
               ],
               [
                 2,
@@ -528,15 +572,19 @@
               ],
               [
                 2,
-                3
-              ],
-              [
-                3,
                 2
               ],
               [
-                3,
+                2,
                 3
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                2,
+                5
               ]
             ]
           }
@@ -552,8 +600,8 @@
         "winningFirstMoves": [
           {
             "move": [
-              2,
-              2
+              1,
+              3
             ],
             "label": "main",
             "isPrimary": true
@@ -563,8 +611,8 @@
           {
             "player": "black",
             "move": [
-              2,
-              2
+              1,
+              3
             ]
           }
         ],
@@ -576,28 +624,29 @@
         "shortestWinLength": 1,
         "nodeCount": null,
         "bestDefenseLine": [],
-        "verifiedAt": "2026-03-21",
+        "verifiedAt": "2026-03-22",
         "solverVersion": "legacy-browser-app-compat"
       },
       "metadata": {
-        "difficulty": "medium",
+        "difficulty": "easy",
         "tags": [
           "6x6",
-          "capture",
+          "kill",
           "one-move",
-          "inside-move"
+          "top-edge",
+          "fill-the-eye"
         ],
-        "source": "legacy-browser-app",
-        "author": null,
-        "createdAt": null,
-        "updatedAt": "2026-03-21"
+        "source": "user-specified-start-position",
+        "author": "Codex",
+        "createdAt": "2026-03-22",
+        "updatedAt": "2026-03-22"
       },
       "derived": {
         "primaryWinningFirstMove": [
-          2,
-          2
+          1,
+          3
         ],
-        "positionHash": "92d8a7607c396d1852b9975fbdb350381c6e83e1"
+        "positionHash": "185446d1d5add8ac89d3a16ee342f093807f5b48"
       }
     },
     {

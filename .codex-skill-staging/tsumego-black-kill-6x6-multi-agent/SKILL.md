@@ -70,6 +70,7 @@ Spawn **3 agents by default**.
 - which black stones can be removed
 - at least one wrong black first move
 - White's best local defense
+- whether a forced `wrongFirstMoveDefense` should be encoded
 - whether the final black move actually captures the target
 - whether the guided line feels natural
 
@@ -96,5 +97,6 @@ Do not ship a new `黒先白死` puzzle until all of these are true:
 - The target white group exists in the start position.
 - The intended line kills White in the stated move count.
 - At least one plausible wrong move fails.
+- If `wrongFirstMoveDefense` is configured, White's forced reply is legal after wrong starts and reproduces the intended White settlement.
 - The puzzle is not substantially similar to an existing one.
 - The regenerated exports stay in sync with canonical.

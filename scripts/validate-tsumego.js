@@ -155,6 +155,74 @@ function collectBlackThreatMovesAfterWhiteReply(app, state, problem) {
   return threatMoves;
 }
 
+function getValidationTargetStones(problem) {
+  if (Array.isArray(problem.targetStones)) {
+    return problem.targetStones;
+  }
+
+  return flattenTargetStones(problem);
+}
+
+function hasTargetColorAliveByTwoEyes(app, board, problem, color) {
+  const analysis = app.analyzeBoard(board);
+  const targetKeys = new Set(getValidationTargetStones(problem).map(([row, col]) => pointKey(row, col)));
+  const targetGroups = analysis.groups.filter(
+    (group) => group.color === color && group.stones.some(([row, col]) => targetKeys.has(pointKey(row, col)))
+  );
+
+  return targetGroups.length > 0 && targetGroups.every((group) => group.eyeRegionIds.size >= 2);
+}
+
+function validateWrongFirstMoveDefense(app, state, problem, wrongLegalMoves, label) {
+  const forcedWrongFirstDefenseMove = Array.isArray(problem.solutions?.wrongFirstMoveDefense?.move)
+    ? problem.solutions.wrongFirstMoveDefense.move
+    : null;
+
+  if (!forcedWrongFirstDefenseMove) {
+    return;
+  }
+
+  wrongLegalMoves.forEach((move) => {
+    const firstResult = app.attemptTsumegoMove(state, move[0], move[1]);
+    if (!firstResult.valid) {
+      return;
+    }
+
+    if (firstResult.nextState?.phase !== "awaiting-auto-white" || !firstResult.nextState.pendingAutoWhite) {
+      addError(
+        `[${label}] wrong first move ${JSON.stringify(
+          move
+        )} does not queue auto-white for wrongFirstMoveDefense ${JSON.stringify(forcedWrongFirstDefenseMove)}.`
+      );
+      return;
+    }
+
+    const defendedState = app.applyPendingTsumegoAutoWhite(firstResult.nextState);
+    const [defenseRow, defenseCol] = forcedWrongFirstDefenseMove;
+
+    if (defendedState.board[defenseRow]?.[defenseCol] !== app.WHITE) {
+      addError(
+        `[${label}] wrongFirstMoveDefense ${JSON.stringify(
+          forcedWrongFirstDefenseMove
+        )} was not played after wrong first move ${JSON.stringify(move)}.`
+      );
+      return;
+    }
+
+    const configuredDefense = problem.solutions?.wrongFirstMoveDefense;
+    const expectsWhiteTwoEyes =
+      configuredDefense?.outcome === "white-live" && configuredDefense?.shape === "two-eyes";
+
+    if (expectsWhiteTwoEyes && !hasTargetColorAliveByTwoEyes(app, defendedState.board, problem, app.WHITE)) {
+      addError(
+        `[${label}] wrongFirstMoveDefense ${JSON.stringify(
+          forcedWrongFirstDefenseMove
+        )} after wrong first move ${JSON.stringify(move)} does not leave White with two eyes.`
+      );
+    }
+  });
+}
+
 function validateLiveProblemDefense(app, state, problem, wrongLegalMoves, label) {
   const openingAnalysis = app.analyzeBoard(state.board);
   const whiteAtariGroups = openingAnalysis.groups.filter((group) => group.color === app.WHITE && group.liberties.size <= 1);
@@ -339,6 +407,22 @@ function validateCanonicalProblem(problem, index) {
     });
   }
 
+  if (problem.solutions.wrongFirstMoveDefense !== undefined) {
+    const wrongFirstMoveDefense = problem.solutions.wrongFirstMoveDefense;
+
+    if (!wrongFirstMoveDefense || !isIntegerPair(wrongFirstMoveDefense.move)) {
+      addError(`[${label}] solutions.wrongFirstMoveDefense.move must be [row, col].`);
+    } else {
+      const [row, col] = wrongFirstMoveDefense.move;
+
+      if (!inBounds(row, col, boardSize)) {
+        addError(`[${label}] wrongFirstMoveDefense.move is out of bounds: [${row}, ${col}].`);
+      } else if (readBoardCell(rows, row, col) !== ".") {
+        addError(`[${label}] wrongFirstMoveDefense.move must point to an empty intersection in the initial position.`);
+      }
+    }
+  }
+
   if (!problem.verification || typeof problem.verification.status !== "string") {
     addError(`[${label}] verification.status is required.`);
   }
@@ -417,6 +501,13 @@ function validateBrowserCompatibility(canonicalData) {
 
     if (wrongLegalMoves.length === 0) {
       addWarning(`[${label}] no legal wrong first moves were found in the current browser export.`);
+    }
+
+    if (
+      canonicalProblem.goalType === "kill" &&
+      Array.isArray(canonicalProblem.solutions?.wrongFirstMoveDefense?.move)
+    ) {
+      validateWrongFirstMoveDefense(app, state, exportedProblem, wrongLegalMoves, label);
     }
 
     if (canonicalProblem.goalType === "live") {

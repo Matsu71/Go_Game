@@ -655,54 +655,47 @@
       "initialPosition": {
         "format": "rows",
         "rows": [
-          ".BBB..",
-          "BWWWB.",
-          "BW.WB.",
-          "BWWWB.",
-          ".BBB..",
-          "......"
+          ".WWB..",
+          "W.WB..",
+          "W.BB..",
+          "BBB...",
+          "B.....",
+          "B....."
         ]
       },
       "turn": "black",
-      "goalType": "capture",
+      "goalType": "kill",
       "target": {
         "type": "groups",
         "color": "white",
         "groups": [
           {
-            "id": "main",
+            "id": "upper",
+            "stones": [
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                1,
+                2
+              ]
+            ]
+          },
+          {
+            "id": "left",
             "stones": [
               [
                 1,
-                1
-              ],
-              [
-                1,
-                2
-              ],
-              [
-                1,
-                3
+                0
               ],
               [
                 2,
-                1
-              ],
-              [
-                2,
-                3
-              ],
-              [
-                3,
-                1
-              ],
-              [
-                3,
-                2
-              ],
-              [
-                3,
-                3
+                0
               ]
             ]
           }
@@ -719,7 +712,7 @@
           {
             "move": [
               2,
-              2
+              1
             ],
             "label": "main",
             "isPrimary": true
@@ -730,40 +723,96 @@
             "player": "black",
             "move": [
               2,
-              2
+              1
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              0,
+              0
             ]
           }
         ],
-        "alternativeLines": [],
-        "isUniqueFirstMove": true
+        "alternativeLines": [
+          {
+            "label": "corner-defense",
+            "moves": [
+              {
+                "player": "black",
+                "move": [
+                  2,
+                  1
+                ]
+              },
+              {
+                "player": "white",
+                "move": [
+                  0,
+                  0
+                ]
+              },
+              {
+                "player": "black",
+                "move": [
+                  1,
+                  1
+                ]
+              }
+            ]
+          }
+        ],
+        "isUniqueFirstMove": true,
+        "wrongFirstMoveDefense": {
+          "move": [
+            2,
+            1
+          ]
+        }
       },
       "verification": {
         "status": "not-strictly-verified",
-        "shortestWinLength": 1,
+        "shortestWinLength": 3,
         "nodeCount": null,
-        "bestDefenseLine": [],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-compat"
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          }
+        ],
+        "verifiedAt": "2026-03-22",
+        "solverVersion": "legacy-browser-app-guided-line"
       },
       "metadata": {
-        "difficulty": "medium",
+        "difficulty": "hard",
         "tags": [
           "6x6",
-          "capture",
-          "one-move",
-          "ring"
+          "kill",
+          "three-move",
+          "shared-vital-point",
+          "left-edge"
         ],
-        "source": "legacy-browser-app",
-        "author": null,
-        "createdAt": null,
-        "updatedAt": "2026-03-21"
+        "source": "user-specified-start-position",
+        "author": "Codex",
+        "createdAt": "2026-03-22",
+        "updatedAt": "2026-03-22"
       },
       "ui": {
-        "prompt": "黒番です。1手で白を取ってください。",
-        "subtitle": "中に打って白の輪を一気に取る問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
-        "hint": null,
-        "explanation": null
+        "prompt": "黒番です。3手で白を殺してください。",
+        "subtitle": "2つに分かれた白の弱点を共通の急所でしめる問題です。",
+        "note": "第7問は黒先白死の3手詰めです。\n正解は2-3です。\n黒が2-3を外すと、白が2-3に応じます。",
+        "hint": "2つの白グループが共有している急所を見ます。",
+        "explanation": "2-3は両方の白グループに効く共通の急所です。黒が先に打つと白は1-2か1-1で片方をつなぐしかなく、黒が残った方をふさいで白全体を取れます。"
       }
     },
     {
@@ -1168,7 +1217,15 @@
             ]
           }
         ],
-        "isUniqueFirstMove": true
+        "isUniqueFirstMove": true,
+        "wrongFirstMoveDefense": {
+          "move": [
+            1,
+            3
+          ],
+          "outcome": "white-live",
+          "shape": "two-eyes"
+        }
       },
       "verification": {
         "status": "not-strictly-verified",
@@ -1203,9 +1260,9 @@
       "ui": {
         "prompt": "黒番です。3手で白を殺してください。",
         "subtitle": "上辺の大きな白一眼を中央から殺す問題です。",
-        "note": "第10問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n最後の黒番で反対側をふさいで白を仕留めてください。",
-        "hint": "3つ並んだ空点の真ん中が急所です。",
-        "explanation": "中央に打つと白の一眼が左右2つの逃げ道に分かれます。白はどちらか一方しか守れないので、黒が反対側をふさげば上辺の白全体が取れます。"
+        "note": "第10問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
+        "hint": "3つ並んだ空点の真ん中、4-2が急所です。",
+        "explanation": "4-2に打つと白の一眼が左右2つの逃げ道に分かれます。白はどちらか一方しか守れないので、黒が反対側をふさげば上辺の白全体が取れます。逆に黒が4-2を外すと、白がそこへ打って2眼で生きます。"
       }
     }
   ]

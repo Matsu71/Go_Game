@@ -81,6 +81,7 @@ Edit `data/canonical/tsumego-canonical.json`.
 - Put the starting board in `initialPosition.rows`.
 - Put the first correct move in `solutions.winningFirstMoves`.
 - For 3-move problems, put the full `black -> white -> black` line in `solutions.principalVariation`.
+- If a wrong first move should let White settle immediately, encode the forced white reply in `solutions.wrongFirstMoveDefense`.
 - Keep display text in `ui`.
 
 ## Validation checklist
@@ -111,3 +112,4 @@ This project already supports guided principal-variation tsumego for `kill` prob
 
 - Use that only when the intended line is explicit and stable.
 - Keep `verification.status` honest when the problem has not been solver-proven against all legal replies.
+- If `wrongFirstMoveDefense` is present, make sure the forced white move is legal after plausible wrong starts and actually stabilizes White in the intended way.

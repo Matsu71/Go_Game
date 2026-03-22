@@ -70,9 +70,19 @@ function getPrincipalVariation(problem) {
   return problem.solutions.principalVariation;
 }
 
+function getWrongFirstMoveDefense(problem) {
+  const defense = problem.solutions?.wrongFirstMoveDefense;
+
+  if (!defense || !Array.isArray(defense.move)) {
+    return null;
+  }
+
+  return defense;
+}
+
 function getForcedWrongFirstDefenseMove(problem) {
-  const move = problem.solutions?.wrongFirstMoveDefense?.move;
-  return Array.isArray(move) ? move : null;
+  const defense = getWrongFirstMoveDefense(problem);
+  return defense ? defense.move : null;
 }
 
 function getTsumegoShortestWinLength(problem) {
@@ -770,6 +780,41 @@ function isTsumegoLiveByTwoEyes(board, problem) {
   return targetGroups.length > 0 && targetGroups.every((group) => group.eyeRegionIds.size >= 2);
 }
 
+function isTsumegoTargetColorAliveByTwoEyes(board, problem, targetColor) {
+  const analysis = analyzeBoard(board);
+  const groupIds = new Set();
+
+  problem.targetStones.forEach(([row, col]) => {
+    if (!isInsideBoard(row, col, getBoardSize(board)) || board[row][col] !== targetColor) {
+      return;
+    }
+
+    const groupId = analysis.groupIdByStone.get(toKey(row, col));
+    if (groupId !== undefined) {
+      groupIds.add(groupId);
+    }
+  });
+
+  const targetGroups = [...groupIds].map((groupId) => analysis.groups[groupId]);
+  return targetGroups.length > 0 && targetGroups.every((group) => group.eyeRegionIds.size >= 2);
+}
+
+function createForcedWrongFirstDefenseMessage(problem, board) {
+  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, WHITE)) {
+    return "不正解です。白が急所に打って2眼を作りました。\n黒番で続きを打って確認できます。";
+  }
+
+  return "不正解です。白が最強応手を返しました。\n黒番で続きを打って確認できます。";
+}
+
+function createForcedWrongFirstDefenseFeedback(problem, board) {
+  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, WHITE)) {
+    return "白が2眼で生きる形になりました。";
+  }
+
+  return "白の最強応手を自動で進めました。";
+}
+
 function createTsumegoGameState(tsumegoState, currentPlayer = tsumegoState.currentPlayer) {
   return {
     board: cloneBoard(tsumegoState.board),
@@ -829,6 +874,7 @@ function chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem) {
 
 function createPendingAutoWhiteStep(tsumegoState, problem) {
   const initialTargetCount = getRemainingTsumegoTargetStones(tsumegoState.board, problem).length;
+  const wrongFirstMoveDefense = getWrongFirstMoveDefense(problem);
   const forcedWrongFirstDefenseMove = getForcedWrongFirstDefenseMove(problem);
   let selectedNextState = null;
 
@@ -849,6 +895,10 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
   }
 
   if (!selectedNextState) {
+    if (problem.goalType !== "live") {
+      return null;
+    }
+
     const bestMove = chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem);
 
     if (!bestMove) {
@@ -860,21 +910,30 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
 
   const remainingTargetCount = getRemainingTsumegoTargetStones(selectedNextState.board, problem).length;
   const capturedCount = initialTargetCount - remainingTargetCount;
+  const forcedWhiteTwoEyes =
+    wrongFirstMoveDefense?.outcome === "white-live" &&
+    wrongFirstMoveDefense?.shape === "two-eyes" &&
+    isTsumegoLiveByTwoEyes(selectedNextState.board, problem);
+  const autoWhiteEnabled = problem.goalType === "live" && remainingTargetCount > 0;
 
   return {
     board: selectedNextState.board,
     previousBoard: selectedNextState.previousBoard,
     currentPlayer: selectedNextState.currentPlayer,
     captures: selectedNextState.captures,
-    autoWhiteEnabled: remainingTargetCount > 0,
+    autoWhiteEnabled,
     message:
-      remainingTargetCount === 0
+      forcedWhiteTwoEyes
+        ? "不正解です。白が急所に入って2眼を作りました。\n黒番で続きを打って確認できます。"
+        : remainingTargetCount === 0
         ? "不正解です。白が1手ずつ進めて黒石を取りました。\n続きを打って確認できます。"
         : capturedCount > 0
           ? "不正解です。白が1手進めて黒石を減らしました。\n黒番で続きを打って確認できます。"
           : "不正解です。白が1手進めました。\n黒番で続きを打って確認できます。",
     feedback:
-      remainingTargetCount === 0
+      forcedWhiteTwoEyes
+        ? "白の決め手で2眼生きになりました。"
+        : remainingTargetCount === 0
         ? "白の読み筋で黒が取られました。"
         : capturedCount > 0
           ? "白が急所に打って黒石を詰めています。"
@@ -934,6 +993,44 @@ function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
   };
 }
 
+function createPendingForcedWrongFirstDefenseStep(tsumegoState, problem) {
+  const forcedWrongFirstDefenseMove = getForcedWrongFirstDefenseMove(problem);
+
+  if (!Array.isArray(forcedWrongFirstDefenseMove)) {
+    return null;
+  }
+
+  const moveResult = attemptMove(
+    createTsumegoGameState(
+      {
+        ...tsumegoState,
+        currentPlayer: WHITE
+      },
+      WHITE
+    ),
+    forcedWrongFirstDefenseMove[0],
+    forcedWrongFirstDefenseMove[1]
+  );
+
+  if (!moveResult.valid) {
+    return null;
+  }
+
+  return {
+    board: moveResult.nextState.board,
+    previousBoard: moveResult.nextState.previousBoard,
+    currentPlayer: moveResult.nextState.currentPlayer,
+    captures: moveResult.nextState.captures,
+    autoWhiteEnabled: false,
+    solved: false,
+    failed: true,
+    overlay: "failure",
+    phase: "free-play",
+    message: createForcedWrongFirstDefenseMessage(problem, moveResult.nextState.board),
+    feedback: createForcedWrongFirstDefenseFeedback(problem, moveResult.nextState.board)
+  };
+}
+
 function queueAutoWhiteStep(tsumegoState, problem, waitingMessage, waitingFeedback) {
   const pendingAutoWhite = createPendingAutoWhiteStep(tsumegoState, problem);
 
@@ -981,6 +1078,30 @@ function queueGuidedAutoWhiteStep(tsumegoState, problem, waitingMessage, waiting
   };
 }
 
+function queueForcedWrongFirstDefenseStep(tsumegoState, problem, waitingMessage, waitingFeedback) {
+  const pendingAutoWhite = createPendingForcedWrongFirstDefenseStep(tsumegoState, problem);
+
+  if (!pendingAutoWhite) {
+    return {
+      ...tsumegoState,
+      currentPlayer: BLACK,
+      phase: "free-play",
+      pendingAutoWhite: null,
+      autoWhiteEnabled: false,
+      message: "不正解です。\nこの局面から続きを打って確認できます。",
+      feedback: "白の強制応手を再現できませんでした。"
+    };
+  }
+
+  return {
+    ...tsumegoState,
+    phase: "awaiting-auto-white",
+    pendingAutoWhite,
+    message: waitingMessage,
+    feedback: waitingFeedback
+  };
+}
+
 function applyPendingTsumegoAutoWhite(tsumegoState) {
   if (!tsumegoState.pendingAutoWhite) {
     return tsumegoState;
@@ -1014,6 +1135,10 @@ function isTsumegoSolved(board, problem) {
 
 function attemptTsumegoMove(tsumegoState, row, col) {
   const problem = getTsumegoProblem(tsumegoState.problemId);
+  const hasForcedWrongFirstDefense =
+    Array.isArray(getForcedWrongFirstDefenseMove(problem)) &&
+    tsumegoState.phase === "initial" &&
+    tsumegoState.lineProgress === 0;
 
   if (tsumegoState.phase === "awaiting-auto-white") {
     return {
@@ -1078,11 +1203,33 @@ function attemptTsumegoMove(tsumegoState, row, col) {
               solved: false,
               failed: true,
               overlay: "failure",
-              autoWhiteEnabled: true
+              autoWhiteEnabled: problem.goalType === "live"
             },
             problem,
             "不正解です。0.5秒後に白が応手します。",
             createTsumegoFailureFeedback(problem)
+          )
+        };
+      }
+
+      if (hasForcedWrongFirstDefense) {
+        return {
+          valid: true,
+          nextState: queueForcedWrongFirstDefenseStep(
+            {
+              ...tsumegoState,
+              board: moveResult.nextState.board,
+              previousBoard: moveResult.nextState.previousBoard,
+              currentPlayer: WHITE,
+              captures: moveResult.nextState.captures,
+              solved: false,
+              failed: true,
+              overlay: "failure",
+              autoWhiteEnabled: false
+            },
+            problem,
+            "不正解です。0.5秒後に白が急所へ応じます。",
+            "まずは白の最強応手を確認してください。"
           )
         };
       }
@@ -1226,6 +1373,28 @@ function attemptTsumegoMove(tsumegoState, row, col) {
         pendingAutoWhite: null,
         autoWhiteEnabled: false
       }
+    };
+  }
+
+  if (Array.isArray(getForcedWrongFirstDefenseMove(problem))) {
+    return {
+      valid: true,
+      nextState: queueForcedWrongFirstDefenseStep(
+        {
+          ...tsumegoState,
+          board: moveResult.nextState.board,
+          previousBoard: moveResult.nextState.previousBoard,
+          currentPlayer: WHITE,
+          captures: moveResult.nextState.captures,
+          solved: false,
+          failed: true,
+          overlay: "failure",
+          autoWhiteEnabled: false
+        },
+        problem,
+        "不正解です。0.5秒後に白が急所へ応じます。",
+        "まずは白の最強応手を確認してください。"
+      )
     };
   }
 

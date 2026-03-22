@@ -49,7 +49,8 @@ npm run check
 
 - Keep project-related skill drafts under `.codex-skill-staging/`.
 - Keep installed skills aligned with staged skills when the project now depends on the new behavior.
-- Candidate future skills include `黒先白死` workflows and true `3手詰め` / sequence-judged workflows once the data model and validation logic are stable enough.
+- Keep `黒先黒生き` and `黒先白死` skills aligned with the current canonical/export workflow.
+- If sequence-judged `3手詰め` support changes, update both the related skills and the validator guidance in the same task.
 
 ## Practical Limits
 

@@ -159,6 +159,9 @@ function validateLiveProblemDefense(app, state, problem, wrongLegalMoves, label)
   const openingAnalysis = app.analyzeBoard(state.board);
   const whiteAtariGroups = openingAnalysis.groups.filter((group) => group.color === app.WHITE && group.liberties.size <= 1);
   const hasGuidedLine = Array.isArray(problem.solutions?.principalVariation) && problem.solutions.principalVariation.length > 1;
+  const forcedWrongFirstDefenseMove = Array.isArray(problem.solutions?.wrongFirstMoveDefense?.move)
+    ? problem.solutions.wrongFirstMoveDefense.move
+    : null;
 
   if (whiteAtariGroups.length > 0) {
     addError(
@@ -207,7 +210,26 @@ function validateLiveProblemDefense(app, state, problem, wrongLegalMoves, label)
       }
     }
 
+    if (
+      forcedWrongFirstDefenseMove &&
+      legalWhiteReplies.length > 0 &&
+      safeWhiteReplies.some((reply) => sameMove(reply, forcedWrongFirstDefenseMove)) === false
+    ) {
+      addError(
+        `[${label}] wrong first move ${JSON.stringify(
+          move
+        )} does not allow the configured wrongFirstMoveDefense ${JSON.stringify(forcedWrongFirstDefenseMove)} as a safe white reply. Safe replies: ${JSON.stringify(
+          safeWhiteReplies
+        )}.`
+      );
+      return;
+    }
+
     if (hasGuidedLine && legalWhiteReplies.length > 1 && safeWhiteReplies.length <= 1) {
+      if (forcedWrongFirstDefenseMove && safeWhiteReplies.some((reply) => sameMove(reply, forcedWrongFirstDefenseMove))) {
+        return;
+      }
+
       addError(
         `[${label}] wrong first move ${JSON.stringify(
           move

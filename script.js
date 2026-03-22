@@ -70,6 +70,11 @@ function getPrincipalVariation(problem) {
   return problem.solutions.principalVariation;
 }
 
+function getForcedWrongFirstDefenseMove(problem) {
+  const move = problem.solutions?.wrongFirstMoveDefense?.move;
+  return Array.isArray(move) ? move : null;
+}
+
 function getTsumegoShortestWinLength(problem) {
   if (Number.isInteger(problem.verification?.shortestWinLength) && problem.verification.shortestWinLength > 0) {
     return problem.verification.shortestWinLength;
@@ -824,20 +829,43 @@ function chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem) {
 
 function createPendingAutoWhiteStep(tsumegoState, problem) {
   const initialTargetCount = getRemainingTsumegoTargetStones(tsumegoState.board, problem).length;
-  const bestMove = chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem);
+  const forcedWrongFirstDefenseMove = getForcedWrongFirstDefenseMove(problem);
+  let selectedNextState = null;
 
-  if (!bestMove) {
-    return null;
+  if (
+    tsumegoState.phase === "initial" &&
+    tsumegoState.lineProgress === 0 &&
+    Array.isArray(forcedWrongFirstDefenseMove)
+  ) {
+    const forcedMoveResult = attemptMove(
+      createTsumegoGameState(tsumegoState, WHITE),
+      forcedWrongFirstDefenseMove[0],
+      forcedWrongFirstDefenseMove[1]
+    );
+
+    if (forcedMoveResult.valid) {
+      selectedNextState = forcedMoveResult.nextState;
+    }
   }
 
-  const remainingTargetCount = getRemainingTsumegoTargetStones(bestMove.nextState.board, problem).length;
+  if (!selectedNextState) {
+    const bestMove = chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem);
+
+    if (!bestMove) {
+      return null;
+    }
+
+    selectedNextState = bestMove.nextState;
+  }
+
+  const remainingTargetCount = getRemainingTsumegoTargetStones(selectedNextState.board, problem).length;
   const capturedCount = initialTargetCount - remainingTargetCount;
 
   return {
-    board: bestMove.nextState.board,
-    previousBoard: bestMove.nextState.previousBoard,
-    currentPlayer: bestMove.nextState.currentPlayer,
-    captures: bestMove.nextState.captures,
+    board: selectedNextState.board,
+    previousBoard: selectedNextState.previousBoard,
+    currentPlayer: selectedNextState.currentPlayer,
+    captures: selectedNextState.captures,
     autoWhiteEnabled: remainingTargetCount > 0,
     message:
       remainingTargetCount === 0

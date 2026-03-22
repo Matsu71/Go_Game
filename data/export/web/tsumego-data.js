@@ -1009,314 +1009,8 @@
       "explanation": "2-3は両方の白グループに効く共通の急所です。黒が先に打つと白は1-2か1-1で片方をつなぐしかなく、黒が残った方をふさいで白全体を取れます。"
     },
     {
-      "id": "problem-8",
-      "title": "第8問",
-      "subtitle": "左上の端で最小6石の2眼を作る問題です。",
-      "boardSize": 6,
-      "rows": [
-        "..W...",
-        "BBW...",
-        ".BW...",
-        "BBW...",
-        "WWW...",
-        "......"
-      ],
-      "turn": "black",
-      "goalType": "live",
-      "target": {
-        "type": "groups",
-        "color": "black",
-        "groups": [
-          {
-            "id": "main",
-            "stones": [
-              [
-                1,
-                0
-              ],
-              [
-                1,
-                1
-              ],
-              [
-                2,
-                1
-              ],
-              [
-                3,
-                0
-              ],
-              [
-                3,
-                1
-              ]
-            ]
-          }
-        ]
-      },
-      "targetStones": [
-        [
-          1,
-          0
-        ],
-        [
-          1,
-          1
-        ],
-        [
-          2,
-          1
-        ],
-        [
-          3,
-          0
-        ],
-        [
-          3,
-          1
-        ]
-      ],
-      "constraints": {
-        "koRule": "simple-ko",
-        "allowSuicide": false,
-        "allowPass": false,
-        "maxDepth": 1
-      },
-      "solutions": {
-        "winningFirstMoves": [
-          {
-            "move": [
-              0,
-              1
-            ],
-            "label": "main",
-            "isPrimary": true
-          }
-        ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              0,
-              1
-            ]
-          }
-        ],
-        "alternativeLines": [],
-        "isUniqueFirstMove": true
-      },
-      "solution": [
-        0,
-        1
-      ],
-      "verification": {
-        "status": "not-strictly-verified",
-        "shortestWinLength": 1,
-        "nodeCount": null,
-        "bestDefenseLine": [],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-compat"
-      },
-      "metadata": {
-        "difficulty": "hard",
-        "tags": [
-          "6x6",
-          "live",
-          "one-move",
-          "two-eyes",
-          "edge"
-        ],
-        "source": "legacy-browser-app",
-        "author": null,
-        "createdAt": null,
-        "updatedAt": "2026-03-21"
-      },
-      "ui": {
-        "prompt": "黒番です。白に包まれた黒で最小6石の2眼を作ってください。",
-        "subtitle": "左上の端で最小6石の2眼を作る問題です。",
-        "note": "第8問は左上の端で最小6石の2眼を作る黒生き問題です。\n白石は必要最小限だけ置いています。\n外すと0.5秒後に白が1手ずつ自動で応手します。",
-        "hint": null,
-        "explanation": null
-      },
-      "prompt": "黒番です。白に包まれた黒で最小6石の2眼を作ってください。",
-      "note": "第8問は左上の端で最小6石の2眼を作る黒生き問題です。\n白石は必要最小限だけ置いています。\n外すと0.5秒後に白が1手ずつ自動で応手します。",
-      "hint": null,
-      "explanation": null
-    },
-    {
-      "id": "problem-9",
-      "title": "第9問",
-      "subtitle": "中央の急所に打ち、白の応手後に2眼を完成させる問題です。",
-      "boardSize": 6,
-      "rows": [
-        ".B.W..",
-        "BB.W..",
-        "B..W..",
-        "BB.W..",
-        "WWWW..",
-        "......"
-      ],
-      "turn": "black",
-      "goalType": "live",
-      "target": {
-        "type": "groups",
-        "color": "black",
-        "groups": [
-          {
-            "id": "main",
-            "stones": [
-              [
-                0,
-                1
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                1,
-                1
-              ],
-              [
-                2,
-                0
-              ],
-              [
-                3,
-                0
-              ],
-              [
-                3,
-                1
-              ]
-            ]
-          }
-        ]
-      },
-      "targetStones": [
-        [
-          0,
-          1
-        ],
-        [
-          1,
-          0
-        ],
-        [
-          1,
-          1
-        ],
-        [
-          2,
-          0
-        ],
-        [
-          3,
-          0
-        ],
-        [
-          3,
-          1
-        ]
-      ],
-      "constraints": {
-        "koRule": "simple-ko",
-        "allowSuicide": false,
-        "allowPass": false,
-        "maxDepth": 1
-      },
-      "solutions": {
-        "winningFirstMoves": [
-          {
-            "move": [
-              2,
-              2
-            ],
-            "label": "main",
-            "isPrimary": true
-          }
-        ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              2,
-              2
-            ]
-          },
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          },
-          {
-            "player": "black",
-            "move": [
-              3,
-              2
-            ]
-          }
-        ],
-        "alternativeLines": [],
-        "isUniqueFirstMove": true,
-        "wrongFirstMoveDefense": {
-          "move": [
-            2,
-            2
-          ]
-        }
-      },
-      "solution": [
-        2,
-        2
-      ],
-      "verification": {
-        "status": "not-strictly-verified",
-        "shortestWinLength": 3,
-        "nodeCount": null,
-        "bestDefenseLine": [
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          }
-        ],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-guided-line"
-      },
-      "metadata": {
-        "difficulty": "hard",
-        "tags": [
-          "6x6",
-          "live",
-          "three-move",
-          "two-eyes",
-          "corner"
-        ],
-        "source": "codex-generated",
-        "author": "Codex",
-        "createdAt": "2026-03-21",
-        "updatedAt": "2026-03-21"
-      },
-      "ui": {
-        "prompt": "黒番です。3手で黒を2眼で生かしてください。",
-        "subtitle": "中央の急所に打ち、白の応手後に2眼を完成させる問題です。",
-        "note": "第9問は黒先黒生きの3手詰めです。\n正しい初手のあと、0.5秒後に白の応手が自動で進みます。\n最後の黒番で2眼を完成させてください。",
-        "hint": "まず中央の急所に打って、白に上か下のどちらかを埋めさせます。",
-        "explanation": "中央を押さえると白は上か下の眼形を1つしか埋められません。残った方を黒が打てば2眼です。"
-      },
-      "prompt": "黒番です。3手で黒を2眼で生かしてください。",
-      "note": "第9問は黒先黒生きの3手詰めです。\n正しい初手のあと、0.5秒後に白の応手が自動で進みます。\n最後の黒番で2眼を完成させてください。",
-      "hint": "まず中央の急所に打って、白に上か下のどちらかを埋めさせます。",
-      "explanation": "中央を押さえると白は上か下の眼形を1つしか埋められません。残った方を黒が打てば2眼です。"
-    },
-    {
       "id": "problem-10",
-      "title": "第10問",
+      "title": "第8問",
       "subtitle": "上辺の大きな白一眼を中央から殺す問題です。",
       "boardSize": 6,
       "rows": [
@@ -1577,14 +1271,320 @@
       "ui": {
         "prompt": "黒番です。3手で白を殺してください。",
         "subtitle": "上辺の大きな白一眼を中央から殺す問題です。",
-        "note": "第10問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
+        "note": "第8問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
         "hint": "3つ並んだ空点の真ん中、4-2が急所です。",
         "explanation": "4-2に打つと白の一眼が左右2つの逃げ道に分かれます。白はどちらか一方しか守れないので、黒が反対側をふさげば上辺の白全体が取れます。逆に黒が4-2を外すと、白がそこへ打って2眼で生きます。"
       },
       "prompt": "黒番です。3手で白を殺してください。",
-      "note": "第10問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
+      "note": "第8問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
       "hint": "3つ並んだ空点の真ん中、4-2が急所です。",
       "explanation": "4-2に打つと白の一眼が左右2つの逃げ道に分かれます。白はどちらか一方しか守れないので、黒が反対側をふさげば上辺の白全体が取れます。逆に黒が4-2を外すと、白がそこへ打って2眼で生きます。"
+    },
+    {
+      "id": "problem-8",
+      "title": "第9問",
+      "subtitle": "左上の端で最小6石の2眼を作る問題です。",
+      "boardSize": 6,
+      "rows": [
+        "..W...",
+        "BBW...",
+        ".BW...",
+        "BBW...",
+        "WWW...",
+        "......"
+      ],
+      "turn": "black",
+      "goalType": "live",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          }
+        ]
+      },
+      "targetStones": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 1
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              0,
+              1
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "solution": [
+        0,
+        1
+      ],
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 1,
+        "nodeCount": null,
+        "bestDefenseLine": [],
+        "verifiedAt": "2026-03-21",
+        "solverVersion": "legacy-browser-app-compat"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "live",
+          "one-move",
+          "two-eyes",
+          "edge"
+        ],
+        "source": "legacy-browser-app",
+        "author": null,
+        "createdAt": null,
+        "updatedAt": "2026-03-21"
+      },
+      "ui": {
+        "prompt": "黒番です。白に包まれた黒で最小6石の2眼を作ってください。",
+        "subtitle": "左上の端で最小6石の2眼を作る問題です。",
+        "note": "第9問は左上の端で最小6石の2眼を作る黒生き問題です。\n白石は必要最小限だけ置いています。\n外すと0.5秒後に白が1手ずつ自動で応手します。",
+        "hint": null,
+        "explanation": null
+      },
+      "prompt": "黒番です。白に包まれた黒で最小6石の2眼を作ってください。",
+      "note": "第9問は左上の端で最小6石の2眼を作る黒生き問題です。\n白石は必要最小限だけ置いています。\n外すと0.5秒後に白が1手ずつ自動で応手します。",
+      "hint": null,
+      "explanation": null
+    },
+    {
+      "id": "problem-9",
+      "title": "第10問",
+      "subtitle": "中央の急所に打ち、白の応手後に2眼を完成させる問題です。",
+      "boardSize": 6,
+      "rows": [
+        ".B.W..",
+        "BB.W..",
+        "B..W..",
+        "BB.W..",
+        "WWWW..",
+        "......"
+      ],
+      "turn": "black",
+      "goalType": "live",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          }
+        ]
+      },
+      "targetStones": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 1
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              2,
+              2
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              2,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              2
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              3,
+              2
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true,
+        "wrongFirstMoveDefense": {
+          "move": [
+            2,
+            2
+          ]
+        }
+      },
+      "solution": [
+        2,
+        2
+      ],
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 3,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              2
+            ]
+          }
+        ],
+        "verifiedAt": "2026-03-21",
+        "solverVersion": "legacy-browser-app-guided-line"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "live",
+          "three-move",
+          "two-eyes",
+          "corner"
+        ],
+        "source": "codex-generated",
+        "author": "Codex",
+        "createdAt": "2026-03-21",
+        "updatedAt": "2026-03-21"
+      },
+      "ui": {
+        "prompt": "黒番です。3手で黒を2眼で生かしてください。",
+        "subtitle": "中央の急所に打ち、白の応手後に2眼を完成させる問題です。",
+        "note": "第10問は黒先黒生きの3手詰めです。\n正しい初手のあと、0.5秒後に白の応手が自動で進みます。\n最後の黒番で2眼を完成させてください。",
+        "hint": "まず中央の急所に打って、白に上か下のどちらかを埋めさせます。",
+        "explanation": "中央を押さえると白は上か下の眼形を1つしか埋められません。残った方を黒が打てば2眼です。"
+      },
+      "prompt": "黒番です。3手で黒を2眼で生かしてください。",
+      "note": "第10問は黒先黒生きの3手詰めです。\n正しい初手のあと、0.5秒後に白の応手が自動で進みます。\n最後の黒番で2眼を完成させてください。",
+      "hint": "まず中央の急所に打って、白に上か下のどちらかを埋めさせます。",
+      "explanation": "中央を押さえると白は上か下の眼形を1つしか埋められません。残った方を黒が打てば2眼です。"
     }
   ]
 };

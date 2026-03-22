@@ -817,254 +817,8 @@
       }
     },
     {
-      "id": "problem-8",
-      "title": "第8問",
-      "boardSize": 6,
-      "initialPosition": {
-        "format": "rows",
-        "rows": [
-          "..W...",
-          "BBW...",
-          ".BW...",
-          "BBW...",
-          "WWW...",
-          "......"
-        ]
-      },
-      "turn": "black",
-      "goalType": "live",
-      "target": {
-        "type": "groups",
-        "color": "black",
-        "groups": [
-          {
-            "id": "main",
-            "stones": [
-              [
-                1,
-                0
-              ],
-              [
-                1,
-                1
-              ],
-              [
-                2,
-                1
-              ],
-              [
-                3,
-                0
-              ],
-              [
-                3,
-                1
-              ]
-            ]
-          }
-        ]
-      },
-      "constraints": {
-        "koRule": "simple-ko",
-        "allowSuicide": false,
-        "allowPass": false,
-        "maxDepth": 1
-      },
-      "solutions": {
-        "winningFirstMoves": [
-          {
-            "move": [
-              0,
-              1
-            ],
-            "label": "main",
-            "isPrimary": true
-          }
-        ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              0,
-              1
-            ]
-          }
-        ],
-        "alternativeLines": [],
-        "isUniqueFirstMove": true
-      },
-      "verification": {
-        "status": "not-strictly-verified",
-        "shortestWinLength": 1,
-        "nodeCount": null,
-        "bestDefenseLine": [],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-compat"
-      },
-      "metadata": {
-        "difficulty": "hard",
-        "tags": [
-          "6x6",
-          "live",
-          "one-move",
-          "two-eyes",
-          "edge"
-        ],
-        "source": "legacy-browser-app",
-        "author": null,
-        "createdAt": null,
-        "updatedAt": "2026-03-21"
-      },
-      "derived": {
-        "primaryWinningFirstMove": [
-          0,
-          1
-        ],
-        "positionHash": "02b0eb0f3c62cf2835bc3cc4c4c6de9a531a9758"
-      }
-    },
-    {
-      "id": "problem-9",
-      "title": "第9問",
-      "boardSize": 6,
-      "initialPosition": {
-        "format": "rows",
-        "rows": [
-          ".B.W..",
-          "BB.W..",
-          "B..W..",
-          "BB.W..",
-          "WWWW..",
-          "......"
-        ]
-      },
-      "turn": "black",
-      "goalType": "live",
-      "target": {
-        "type": "groups",
-        "color": "black",
-        "groups": [
-          {
-            "id": "main",
-            "stones": [
-              [
-                0,
-                1
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                1,
-                1
-              ],
-              [
-                2,
-                0
-              ],
-              [
-                3,
-                0
-              ],
-              [
-                3,
-                1
-              ]
-            ]
-          }
-        ]
-      },
-      "constraints": {
-        "koRule": "simple-ko",
-        "allowSuicide": false,
-        "allowPass": false,
-        "maxDepth": 1
-      },
-      "solutions": {
-        "winningFirstMoves": [
-          {
-            "move": [
-              2,
-              2
-            ],
-            "label": "main",
-            "isPrimary": true
-          }
-        ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              2,
-              2
-            ]
-          },
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          },
-          {
-            "player": "black",
-            "move": [
-              3,
-              2
-            ]
-          }
-        ],
-        "alternativeLines": [],
-        "isUniqueFirstMove": true,
-        "wrongFirstMoveDefense": {
-          "move": [
-            2,
-            2
-          ]
-        }
-      },
-      "verification": {
-        "status": "not-strictly-verified",
-        "shortestWinLength": 3,
-        "nodeCount": null,
-        "bestDefenseLine": [
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          }
-        ],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-guided-line"
-      },
-      "metadata": {
-        "difficulty": "hard",
-        "tags": [
-          "6x6",
-          "live",
-          "three-move",
-          "two-eyes",
-          "corner"
-        ],
-        "source": "codex-generated",
-        "author": "Codex",
-        "createdAt": "2026-03-21",
-        "updatedAt": "2026-03-21"
-      },
-      "derived": {
-        "primaryWinningFirstMove": [
-          2,
-          2
-        ],
-        "positionHash": "f02e7f2fe01992a53f0711214fc15b2bb5a2c435"
-      }
-    },
-    {
       "id": "problem-10",
-      "title": "第10問",
+      "title": "第8問",
       "boardSize": 6,
       "initialPosition": {
         "format": "rows",
@@ -1264,6 +1018,252 @@
           3
         ],
         "positionHash": "8022f4f4dbb43ba0dea8406b725d075a7d24a024"
+      }
+    },
+    {
+      "id": "problem-8",
+      "title": "第9問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          "..W...",
+          "BBW...",
+          ".BW...",
+          "BBW...",
+          "WWW...",
+          "......"
+        ]
+      },
+      "turn": "black",
+      "goalType": "live",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 1
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              0,
+              1
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 1,
+        "nodeCount": null,
+        "bestDefenseLine": [],
+        "verifiedAt": "2026-03-21",
+        "solverVersion": "legacy-browser-app-compat"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "live",
+          "one-move",
+          "two-eyes",
+          "edge"
+        ],
+        "source": "legacy-browser-app",
+        "author": null,
+        "createdAt": null,
+        "updatedAt": "2026-03-21"
+      },
+      "derived": {
+        "primaryWinningFirstMove": [
+          0,
+          1
+        ],
+        "positionHash": "02b0eb0f3c62cf2835bc3cc4c4c6de9a531a9758"
+      }
+    },
+    {
+      "id": "problem-9",
+      "title": "第10問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          ".B.W..",
+          "BB.W..",
+          "B..W..",
+          "BB.W..",
+          "WWWW..",
+          "......"
+        ]
+      },
+      "turn": "black",
+      "goalType": "live",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                3,
+                0
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 1
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              2,
+              2
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              2,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              2
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              3,
+              2
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true,
+        "wrongFirstMoveDefense": {
+          "move": [
+            2,
+            2
+          ]
+        }
+      },
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 3,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              2
+            ]
+          }
+        ],
+        "verifiedAt": "2026-03-21",
+        "solverVersion": "legacy-browser-app-guided-line"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "live",
+          "three-move",
+          "two-eyes",
+          "corner"
+        ],
+        "source": "codex-generated",
+        "author": "Codex",
+        "createdAt": "2026-03-21",
+        "updatedAt": "2026-03-21"
+      },
+      "derived": {
+        "primaryWinningFirstMove": [
+          2,
+          2
+        ],
+        "positionHash": "f02e7f2fe01992a53f0711214fc15b2bb5a2c435"
       }
     }
   ]

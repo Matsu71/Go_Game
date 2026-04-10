@@ -758,7 +758,7 @@
       }
     },
     {
-      "id": "problem-10",
+      "id": "problem-8",
       "title": "第8問",
       "boardSize": 6,
       "initialPosition": {
@@ -904,7 +904,7 @@
       }
     },
     {
-      "id": "problem-8",
+      "id": "problem-9",
       "title": "第9問",
       "boardSize": 6,
       "initialPosition": {
@@ -1011,7 +1011,7 @@
       }
     },
     {
-      "id": "problem-9",
+      "id": "problem-10",
       "title": "第10問",
       "boardSize": 6,
       "initialPosition": {

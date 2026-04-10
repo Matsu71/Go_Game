@@ -449,15 +449,22 @@ function validateWrongGuidedMoveDefenses(app, state, problem, label) {
 
 function validateCanonicalProblem(problem, index) {
   const label = `${problem.id ?? `index-${index}`}`;
+  const expectedProblemNumber = index + 1;
+  const expectedId = `problem-${expectedProblemNumber}`;
+  const expectedTitle = `第${expectedProblemNumber}問`;
   const boardSize = problem.boardSize;
   const rows = getProblemRows(problem);
 
   if (typeof problem.id !== "string" || problem.id.length === 0) {
     addError(`[${label}] id is required.`);
+  } else if (problem.id !== expectedId) {
+    addError(`[${label}] id must match the browser problem number and canonical order: expected "${expectedId}".`);
   }
 
   if (typeof problem.title !== "string" || problem.title.length === 0) {
     addError(`[${label}] title is required.`);
+  } else if (problem.title !== expectedTitle) {
+    addError(`[${label}] title must match the canonical order: expected "${expectedTitle}".`);
   }
 
   if (!Number.isInteger(boardSize) || boardSize <= 0) {

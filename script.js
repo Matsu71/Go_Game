@@ -85,6 +85,18 @@ function getForcedWrongFirstDefenseMove(problem) {
   return defense ? defense.move : null;
 }
 
+function getWrongGuidedMoveDefense(problem, lineProgress) {
+  const defenses = problem.solutions?.wrongGuidedMoveDefenses;
+
+  if (!Array.isArray(defenses)) {
+    return null;
+  }
+
+  return defenses.find(
+    (defense) => defense && defense.lineProgress === lineProgress && Array.isArray(defense.move)
+  ) ?? null;
+}
+
 function getTsumegoShortestWinLength(problem) {
   if (Number.isInteger(problem.verification?.shortestWinLength) && problem.verification.shortestWinLength > 0) {
     return problem.verification.shortestWinLength;
@@ -848,6 +860,10 @@ function createTsumegoGameState(tsumegoState, currentPlayer = tsumegoState.curre
   };
 }
 
+function isAttackFirstBlackStoneDefense(defense) {
+  return defense?.label === "attack-first-black-stone";
+}
+
 function chooseAutoWhiteMoveForLiveProblem(tsumegoState, problem) {
   const currentGroups = collectTsumegoTargetGroups(tsumegoState.board, problem);
   const currentTargetCount = getRemainingTsumegoTargetStones(tsumegoState.board, problem).length;
@@ -896,7 +912,9 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
   const initialTargetCount = getRemainingTsumegoTargetStones(tsumegoState.board, problem).length;
   const wrongFirstMoveDefense = getWrongFirstMoveDefense(problem);
   const forcedWrongFirstDefenseMove = getForcedWrongFirstDefenseMove(problem);
+  const wrongGuidedMoveDefense = getWrongGuidedMoveDefense(problem, tsumegoState.lineProgress);
   let selectedNextState = null;
+  let selectedWrongGuidedMoveDefense = null;
 
   if (
     tsumegoState.phase === "initial" &&
@@ -911,6 +929,19 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
 
     if (forcedMoveResult.valid) {
       selectedNextState = forcedMoveResult.nextState;
+    }
+  }
+
+  if (!selectedNextState && tsumegoState.phase === "guided-play" && wrongGuidedMoveDefense) {
+    const forcedMoveResult = attemptMove(
+      createTsumegoGameState(tsumegoState, WHITE),
+      wrongGuidedMoveDefense.move[0],
+      wrongGuidedMoveDefense.move[1]
+    );
+
+    if (forcedMoveResult.valid) {
+      selectedNextState = forcedMoveResult.nextState;
+      selectedWrongGuidedMoveDefense = wrongGuidedMoveDefense;
     }
   }
 
@@ -943,7 +974,11 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
     captures: selectedNextState.captures,
     autoWhiteEnabled,
     message:
-      forcedWhiteTwoEyes
+      selectedWrongGuidedMoveDefense
+        ? isAttackFirstBlackStoneDefense(selectedWrongGuidedMoveDefense)
+          ? "不正解です。白が黒の初手の石を取りに行きました。\n黒番で続きを打って確認できます。"
+          : "不正解です。白が最強応手を返しました。\n黒番で続きを打って確認できます。"
+        : forcedWhiteTwoEyes
         ? "不正解です。白が急所に入って2眼を作りました。\n黒番で続きを打って確認できます。"
         : remainingTargetCount === 0
         ? "不正解です。白が1手ずつ進めて黒石を取りました。\n続きを打って確認できます。"
@@ -951,7 +986,11 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
           ? "不正解です。白が1手進めて黒石を減らしました。\n黒番で続きを打って確認できます。"
           : "不正解です。白が1手進めました。\n黒番で続きを打って確認できます。",
     feedback:
-      forcedWhiteTwoEyes
+      selectedWrongGuidedMoveDefense
+        ? isAttackFirstBlackStoneDefense(selectedWrongGuidedMoveDefense)
+          ? "黒の初手の石が狙われています。"
+          : "白の最強応手を自動で進めました。"
+        : forcedWhiteTwoEyes
         ? "白の決め手で2眼生きになりました。"
         : remainingTargetCount === 0
         ? "白の読み筋で黒が取られました。"

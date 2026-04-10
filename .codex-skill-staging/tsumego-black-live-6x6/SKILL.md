@@ -86,6 +86,8 @@ node scripts/validate-tsumego.js
 
 - Legal but wrong black moves should fail to make the target black group alive.
 - For this app, wrong moves on `goalType: "live"` should still give white a sensible auto-attack path.
+- For guided multi-move problems, if a later wrong black move needs a specific White refutation, encode it in `solutions.wrongGuidedMoveDefenses` with the current `lineProgress` and White's move instead of relying on the generic auto-attack heuristic.
+- If Black's first guided stone should be attacked after a wrong later move, White's forced reply should go after that stone so Black cannot still make two eyes on the next move.
 - If a candidate wrong move accidentally also makes two eyes, the problem is ambiguous and should be rebuilt.
 
 6. Check similarity against existing problems.
@@ -102,6 +104,7 @@ Edit `data/canonical/tsumego-canonical.json` and keep the problem explicit.
 - Put the start position in `initialPosition.rows`.
 - Put the target black stones under `target.groups`.
 - Put the correct first move in `solutions.winningFirstMoves`.
+- For guided lines, use `solutions.principalVariation`; when wrong later moves need forced White punishment, add `solutions.wrongGuidedMoveDefenses`.
 - Keep UI strings in `ui`, not mixed into `metadata` or `verification`.
 - After editing canonical, regenerate exports before checking the browser UI.
 - Update `README.md` when the documented problem set or workflow changes.
@@ -135,14 +138,15 @@ For a good `黒生き` puzzle, verify all of the following:
 - The intended line makes the target black group alive.
 - The starting position is not already alive.
 - At least one plausible wrong move stays not alive.
+- In guided multi-move problems, plausible wrong later moves should receive a White reply that prevents Black from making two eyes on the next move.
 - On simple black-live problems, plausible wrong moves should not turn into an easy White-killing sequence because White was left too thin.
 - White stones are not overfilled and are not trivially all captured by the correct move unless that is the explicit puzzle theme.
 - The puzzle is not substantially similar to an existing problem in local shape, life idea, or vital point.
 
 ## Multi-move note
 
-The current app logic grades only the first move and then lets the user continue reading freely.
+The app supports guided sequence judgement when `solutions.principalVariation` is present.
 
-- If the user asks for a true 3-move or 5-move judged problem, do not pretend the current implementation already supports that.
-- Either extend the app to validate move sequences, or state clearly that only the first move is auto-judged and the rest is for study.
-- If sequence support is added later, extend canonical `solutions` and `verification` first, then update exports and UI behavior.
+- Use `solutions.principalVariation` for guided 3-move or longer problems.
+- Audit wrong later black moves, not only wrong first moves.
+- If the generic auto-White response is tactically wrong, encode a forced response in `solutions.wrongGuidedMoveDefenses`.

@@ -159,6 +159,25 @@ function collectBlackThreatMovesAfterWhiteReply(app, state, problem) {
   return threatMoves;
 }
 
+function collectBlackLiveMoves(app, state, problem) {
+  const liveMoves = [];
+
+  for (let row = 0; row < problem.boardSize; row += 1) {
+    for (let col = 0; col < problem.boardSize; col += 1) {
+      const result = app.attemptTsumegoMove(state, row, col);
+      if (!result.valid) {
+        continue;
+      }
+
+      if (app.isTsumegoLiveByTwoEyes(result.nextState.board, problem)) {
+        liveMoves.push([row, col]);
+      }
+    }
+  }
+
+  return liveMoves;
+}
+
 function getValidationTargetStones(problem) {
   if (Array.isArray(problem.targetStones)) {
     return problem.targetStones;
@@ -313,6 +332,121 @@ function validateLiveProblemDefense(app, state, problem, wrongLegalMoves, label)
   });
 }
 
+function playPrincipalVariationToLineProgress(app, state, problem, lineProgress, label) {
+  const principalVariation = problem.solutions?.principalVariation ?? [];
+  let currentState = state;
+
+  for (let index = 0; index < lineProgress; index += 1) {
+    const entry = principalVariation[index];
+
+    if (!entry || !isIntegerPair(entry.move)) {
+      addError(`[${label}] principalVariation[${index}] is required before wrongGuidedMoveDefenses validation.`);
+      return null;
+    }
+
+    if (entry.player === "black") {
+      const result = app.attemptTsumegoMove(currentState, entry.move[0], entry.move[1]);
+
+      if (!result.valid) {
+        addError(`[${label}] principalVariation[${index}] black move ${JSON.stringify(entry.move)} is not playable.`);
+        return null;
+      }
+
+      currentState = result.nextState;
+      continue;
+    }
+
+    if (entry.player === "white") {
+      if (currentState.phase !== "awaiting-auto-white" || !currentState.pendingAutoWhite) {
+        addError(`[${label}] principalVariation[${index}] white move has no pending auto-white state.`);
+        return null;
+      }
+
+      if (currentState.pendingAutoWhite.board[entry.move[0]]?.[entry.move[1]] !== app.WHITE) {
+        addError(`[${label}] principalVariation[${index}] pending auto-white does not play ${JSON.stringify(entry.move)}.`);
+        return null;
+      }
+
+      currentState = app.applyPendingTsumegoAutoWhite(currentState);
+      continue;
+    }
+
+    addError(`[${label}] principalVariation[${index}].player must be "black" or "white".`);
+    return null;
+  }
+
+  return currentState;
+}
+
+function validateWrongGuidedMoveDefenses(app, state, problem, label) {
+  const defenses = problem.solutions?.wrongGuidedMoveDefenses;
+
+  if (!Array.isArray(defenses)) {
+    return;
+  }
+
+  const principalVariation = problem.solutions?.principalVariation ?? [];
+
+  defenses.forEach((defense, defenseIndex) => {
+    const baseState = playPrincipalVariationToLineProgress(app, state, problem, defense.lineProgress, label);
+    const expectedEntry = principalVariation[defense.lineProgress];
+
+    if (!baseState || !expectedEntry || expectedEntry.player !== "black") {
+      return;
+    }
+
+    const wrongMoveResults = [];
+
+    for (let row = 0; row < problem.boardSize; row += 1) {
+      for (let col = 0; col < problem.boardSize; col += 1) {
+        if (sameMove([row, col], expectedEntry.move)) {
+          continue;
+        }
+
+        const result = app.attemptTsumegoMove(baseState, row, col);
+        if (!result.valid) {
+          continue;
+        }
+
+        wrongMoveResults.push([row, col]);
+
+        if (result.nextState?.phase !== "awaiting-auto-white" || !result.nextState.pendingAutoWhite) {
+          addError(
+            `[${label}] wrong guided move ${JSON.stringify(
+              [row, col]
+            )} does not queue auto-white for wrongGuidedMoveDefenses[${defenseIndex}].`
+          );
+          continue;
+        }
+
+        const defendedState = app.applyPendingTsumegoAutoWhite(result.nextState);
+
+        if (defendedState.board[defense.move[0]]?.[defense.move[1]] !== app.WHITE) {
+          addError(
+            `[${label}] wrongGuidedMoveDefenses[${defenseIndex}] ${JSON.stringify(
+              defense.move
+            )} was not played after wrong guided move ${JSON.stringify([row, col])}.`
+          );
+          continue;
+        }
+
+        const blackLiveMoves = collectBlackLiveMoves(app, defendedState, problem);
+        if (blackLiveMoves.length > 0) {
+          addError(
+            `[${label}] wrongGuidedMoveDefenses[${defenseIndex}] still allows immediate black life after wrong guided move ${JSON.stringify(
+              [row, col]
+            )}: ${JSON.stringify(blackLiveMoves)}.`
+          );
+        }
+      }
+    }
+
+    if (wrongMoveResults.length === 0) {
+      addWarning(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}] found no legal wrong guided moves.`);
+    }
+  });
+}
+
 function validateCanonicalProblem(problem, index) {
   const label = `${problem.id ?? `index-${index}`}`;
   const boardSize = problem.boardSize;
@@ -424,6 +558,42 @@ function validateCanonicalProblem(problem, index) {
       } else if (readBoardCell(rows, row, col) !== ".") {
         addError(`[${label}] wrongFirstMoveDefense.move must point to an empty intersection in the initial position.`);
       }
+    }
+  }
+
+  if (problem.solutions.wrongGuidedMoveDefenses !== undefined) {
+    const wrongGuidedMoveDefenses = problem.solutions.wrongGuidedMoveDefenses;
+    const principalVariation = Array.isArray(problem.solutions.principalVariation)
+      ? problem.solutions.principalVariation
+      : [];
+
+    if (!Array.isArray(wrongGuidedMoveDefenses)) {
+      addError(`[${label}] solutions.wrongGuidedMoveDefenses must be an array when present.`);
+    } else if (problem.goalType !== "live") {
+      addError(`[${label}] solutions.wrongGuidedMoveDefenses is only supported for live problems.`);
+    } else {
+      wrongGuidedMoveDefenses.forEach((defense, defenseIndex) => {
+        if (!defense || !Number.isInteger(defense.lineProgress) || defense.lineProgress < 1) {
+          addError(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}].lineProgress must be a positive integer.`);
+          return;
+        }
+
+        if (!principalVariation[defense.lineProgress] || principalVariation[defense.lineProgress].player !== "black") {
+          addError(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}].lineProgress must point to a black guided move.`);
+        }
+
+        if (!isIntegerPair(defense.move)) {
+          addError(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}].move must be [row, col].`);
+          return;
+        }
+
+        const [row, col] = defense.move;
+        if (!inBounds(row, col, boardSize)) {
+          addError(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}].move is out of bounds: [${row}, ${col}].`);
+        } else if (readBoardCell(rows, row, col) !== ".") {
+          addError(`[${label}] wrongGuidedMoveDefenses[${defenseIndex}].move must point to an empty intersection in the initial position.`);
+        }
+      });
     }
   }
 
@@ -551,6 +721,7 @@ function validateBrowserCompatibility(canonicalData) {
 
     if (canonicalProblem.goalType === "live") {
       validateLiveProblemDefense(app, state, exportedProblem, wrongLegalMoves, label);
+      validateWrongGuidedMoveDefenses(app, state, exportedProblem, label);
     }
   });
 }

@@ -91,6 +91,8 @@ Every agent should return concise, structured results.
 - White's best reply or reply sequence
 - whether White occupies the vital point when appropriate
 - whether any wrong black move turns into an easy White-killing sequence because White was left too thin
+- whether later wrong black moves in a guided line require `solutions.wrongGuidedMoveDefenses`
+- whether White should attack Black's first guided stone after a wrong later move
 - whether the auto-White behavior in the app is acceptable or needs code adjustment
 - user-facing move references in `x-y` notation when reporting points
 
@@ -122,6 +124,7 @@ Do not ship a new `黒生き` puzzle until all of these are true:
 - The target black stones are not already alive in the start position.
 - The intended line makes black alive.
 - At least one plausible wrong move remains not alive.
+- In guided problems, a plausible wrong later black move must not allow Black to make two eyes on the next move; encode a forced White refutation in `solutions.wrongGuidedMoveDefenses` when needed.
 - White stones are sparse and purposeful.
 - On simple black-live problems, White's attack shape is robust enough that Black cannot easily kill White first through an obvious thin point.
 - The puzzle does not accidentally become a "capture all White" problem unless that is the explicit theme.
@@ -130,10 +133,8 @@ Do not ship a new `黒生き` puzzle until all of these are true:
 
 ## Multi-move caution
 
-The current app auto-judges only the first move.
+The current app supports guided principal-variation judgement when `solutions.principalVariation` is present.
 
-- If the requested puzzle is 3 moves, 5 moves, or longer, the team must explicitly decide whether:
-- the app will be extended to validate full move sequences, or
-- the app will judge only the first move and allow free reading after that.
-
-Do not describe a puzzle as fully sequence-judged unless the code actually supports that.
+- If the requested puzzle is 3 moves, 5 moves, or longer, explicitly decide whether it should use guided sequence judgement or first-move-only judgement.
+- Do not describe a puzzle as fully sequence-judged unless `solutions.principalVariation` and the UI behavior actually support that.
+- When guided sequence support is used, audit wrong later black moves and add `solutions.wrongGuidedMoveDefenses` if the generic auto-White response is not the tactical refutation.

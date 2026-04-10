@@ -1417,6 +1417,16 @@
         ],
         "alternativeLines": [],
         "isUniqueFirstMove": true,
+        "wrongGuidedMoveDefenses": [
+          {
+            "lineProgress": 2,
+            "move": [
+              3,
+              2
+            ],
+            "label": "attack-first-black-stone"
+          }
+        ],
         "wrongFirstMoveDefense": {
           "move": [
             2,
@@ -1441,8 +1451,8 @@
             ]
           }
         ],
-        "verifiedAt": "2026-03-21",
-        "solverVersion": "legacy-browser-app-guided-line"
+        "verifiedAt": "2026-04-11",
+        "solverVersion": "legacy-browser-app-guided-line-wrong-defense"
       },
       "metadata": {
         "difficulty": "hard",
@@ -1456,7 +1466,7 @@
         "source": "codex-generated",
         "author": "Codex",
         "createdAt": "2026-03-21",
-        "updatedAt": "2026-03-21"
+        "updatedAt": "2026-04-11"
       },
       "ui": {
         "prompt": "黒番です。3手で黒を2眼で生かしてください。",

@@ -24,6 +24,7 @@ Use these files as the default places to retain project know-how:
 - Do not add or edit problems directly in `data/export/web/tsumego-data.js`.
 - Do not add or edit problems directly in `data/export/solver/tsumego-problems.json`.
 - Update canonical first, then regenerate exports, then validate.
+- For `黒先白死` problems where Black's correct move prevents White's two eyes and White's death is already certain, treat that move as the solving move. Encode `solutions.successCondition: "prevent-white-two-eyes"`, keep `verification.shortestWinLength` at `1`, and do not require a guided automatic White reply.
 
 Default command flow:
 

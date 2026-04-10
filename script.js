@@ -98,6 +98,14 @@ function hasGuidedTsumegoLine(problem) {
   return getPrincipalVariation(problem).length > 1;
 }
 
+function isPreventWhiteTwoEyesProblem(problem) {
+  return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-white-two-eyes";
+}
+
+function isTsumegoWinningFirstMove(problem, row, col) {
+  return (problem.solutions?.winningFirstMoves ?? []).some((entry) => isSameMove(entry?.move, [row, col]));
+}
+
 function normalizeTsumegoProblem(problem) {
   const boardSize = problem.boardSize ?? TSUMEGO_DATA.boardSize;
 
@@ -647,6 +655,10 @@ function createTsumegoSuccessMessage(problem) {
     return `正解です。${getTsumegoShortestWinLength(problem)}手で白を殺しました。\nこの局面から続きを打って確認できます。`;
   }
 
+  if (isPreventWhiteTwoEyesProblem(problem)) {
+    return "正解です。白の2眼をつぶしました。\nこの局面から続きを打って確認できます。";
+  }
+
   return "正解です。白を取りました。\nこの局面から続きを打って確認できます。";
 }
 
@@ -663,10 +675,18 @@ function createTsumegoSuccessFeedback(problem) {
     return "白の逃げ道をふさいで仕留めました。";
   }
 
+  if (isPreventWhiteTwoEyesProblem(problem)) {
+    return "この1手で白は2眼を作れなくなりました。";
+  }
+
   return "この1手で白が取れました。";
 }
 
 function createTsumegoFailureFeedback(problem) {
+  if (isPreventWhiteTwoEyesProblem(problem)) {
+    return "この問題は1手で白の2眼をつぶす問題です。";
+  }
+
   return `この問題は${getTsumegoShortestWinLength(problem)}手詰めです。`;
 }
 
@@ -1350,6 +1370,27 @@ function attemptTsumegoMove(tsumegoState, row, col) {
         "不正解です。0.5秒後に白が応手します。",
         "まずは黒の誤った1手を確認してください。"
       )
+    };
+  }
+
+  if (isPreventWhiteTwoEyesProblem(problem) && isTsumegoWinningFirstMove(problem, row, col)) {
+    return {
+      valid: true,
+      nextState: {
+        ...tsumegoState,
+        board: moveResult.nextState.board,
+        previousBoard: moveResult.nextState.previousBoard,
+        currentPlayer: moveResult.nextState.currentPlayer,
+        captures: moveResult.nextState.captures,
+        message: createTsumegoSuccessMessage(problem),
+        feedback: createTsumegoSuccessFeedback(problem),
+        solved: true,
+        failed: false,
+        phase: "free-play",
+        overlay: "success",
+        pendingAutoWhite: null,
+        autoWhiteEnabled: false
+      }
     };
   }
 

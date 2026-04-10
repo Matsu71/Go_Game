@@ -56,6 +56,10 @@ function getExpectedTargetCell(problem) {
   return problem.target?.color === "black" ? "B" : "W";
 }
 
+function isPreventWhiteTwoEyesProblem(problem) {
+  return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-white-two-eyes";
+}
+
 function normalizeMoveList(moves) {
   return moves.map((move) => JSON.stringify(move)).sort();
 }
@@ -423,8 +427,24 @@ function validateCanonicalProblem(problem, index) {
     }
   }
 
+  if (problem.solutions.successCondition !== undefined) {
+    if (problem.solutions.successCondition !== "prevent-white-two-eyes") {
+      addError(`[${label}] solutions.successCondition must be "prevent-white-two-eyes" when present.`);
+    }
+
+    if (problem.goalType !== "kill") {
+      addError(`[${label}] solutions.successCondition is only supported for kill problems.`);
+    }
+
+    if (Array.isArray(problem.solutions.principalVariation) && problem.solutions.principalVariation.length > 0) {
+      addError(`[${label}] prevent-white-two-eyes problems should not define solutions.principalVariation.`);
+    }
+  }
+
   if (!problem.verification || typeof problem.verification.status !== "string") {
     addError(`[${label}] verification.status is required.`);
+  } else if (isPreventWhiteTwoEyesProblem(problem) && problem.verification.shortestWinLength !== 1) {
+    addError(`[${label}] prevent-white-two-eyes problems must use verification.shortestWinLength = 1.`);
   }
 
   if (!problem.metadata || !Array.isArray(problem.metadata.tags)) {
@@ -493,6 +513,25 @@ function validateBrowserCompatibility(canonicalData) {
 
     if (canonicalProblem.goalType === "live" && app.isTsumegoLiveByTwoEyes(state.board, exportedProblem)) {
       addError(`[${label}] live problem is already alive before the first move.`);
+    }
+
+    if (isPreventWhiteTwoEyesProblem(canonicalProblem)) {
+      expectedWinningMoves.forEach((move) => {
+        const result = app.attemptTsumegoMove(state, move[0], move[1]);
+
+        if (!result.nextState?.solved || result.nextState.phase === "awaiting-auto-white") {
+          addError(
+            `[${label}] prevent-white-two-eyes winning move ${JSON.stringify(
+              move
+            )} must solve immediately without queued auto-white.`
+          );
+          return;
+        }
+
+        if (hasTargetColorAliveByTwoEyes(app, result.nextState.board, exportedProblem, app.WHITE)) {
+          addError(`[${label}] prevent-white-two-eyes winning move ${JSON.stringify(move)} leaves White with two eyes.`);
+        }
+      });
     }
 
     const wrongLegalMoves = legalMoves.filter(

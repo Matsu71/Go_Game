@@ -718,57 +718,7 @@
             "isPrimary": true
           }
         ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              2,
-              1
-            ]
-          },
-          {
-            "player": "white",
-            "move": [
-              1,
-              1
-            ]
-          },
-          {
-            "player": "black",
-            "move": [
-              0,
-              0
-            ]
-          }
-        ],
-        "alternativeLines": [
-          {
-            "label": "corner-defense",
-            "moves": [
-              {
-                "player": "black",
-                "move": [
-                  2,
-                  1
-                ]
-              },
-              {
-                "player": "white",
-                "move": [
-                  0,
-                  0
-                ]
-              },
-              {
-                "player": "black",
-                "move": [
-                  1,
-                  1
-                ]
-              }
-            ]
-          }
-        ],
+        "successCondition": "prevent-white-two-eyes",
         "isUniqueFirstMove": true,
         "wrongFirstMoveDefense": {
           "move": [
@@ -779,40 +729,32 @@
       },
       "verification": {
         "status": "not-strictly-verified",
-        "shortestWinLength": 3,
+        "shortestWinLength": 1,
         "nodeCount": null,
-        "bestDefenseLine": [
-          {
-            "player": "white",
-            "move": [
-              1,
-              1
-            ]
-          }
-        ],
-        "verifiedAt": "2026-03-22",
-        "solverVersion": "legacy-browser-app-guided-line"
+        "bestDefenseLine": [],
+        "verifiedAt": "2026-04-11",
+        "solverVersion": "legacy-browser-app-prevent-white-two-eyes"
       },
       "metadata": {
         "difficulty": "hard",
         "tags": [
           "6x6",
           "kill",
-          "three-move",
+          "one-move",
           "shared-vital-point",
           "left-edge"
         ],
         "source": "user-specified-start-position",
         "author": "Codex",
         "createdAt": "2026-03-22",
-        "updatedAt": "2026-03-22"
+        "updatedAt": "2026-04-11"
       },
       "ui": {
-        "prompt": "黒番です。3手で白を殺してください。",
+        "prompt": "黒番です。1手で白の2眼をつぶしてください。",
         "subtitle": "2つに分かれた白の弱点を共通の急所でしめる問題です。",
-        "note": "第7問は黒先白死の3手詰めです。\n正解は2-3です。\n黒が2-3を外すと、白が2-3に応じます。",
+        "note": "第7問は黒先白死の1手詰めです。\n正解は2-3です。\nこの1手で白は2眼を作れなくなります。",
         "hint": "2つの白グループが共有している急所を見ます。",
-        "explanation": "2-3は両方の白グループに効く共通の急所です。黒が先に打つと白は1-2か1-1で片方をつなぐしかなく、黒が残った方をふさいで白全体を取れます。"
+        "explanation": "2-3は両方の白グループに効く共通の急所です。黒が先に打つと白は2眼を作れません。白の死が確定するので、この時点で正解です。"
       }
     },
     {
@@ -907,7 +849,7 @@
         "koRule": "simple-ko",
         "allowSuicide": false,
         "allowPass": false,
-        "maxDepth": 3
+        "maxDepth": 1
       },
       "solutions": {
         "winningFirstMoves": [
@@ -920,57 +862,7 @@
             "isPrimary": true
           }
         ],
-        "principalVariation": [
-          {
-            "player": "black",
-            "move": [
-              1,
-              3
-            ]
-          },
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          },
-          {
-            "player": "black",
-            "move": [
-              1,
-              4
-            ]
-          }
-        ],
-        "alternativeLines": [
-          {
-            "label": "mirror-defense",
-            "moves": [
-              {
-                "player": "black",
-                "move": [
-                  1,
-                  3
-                ]
-              },
-              {
-                "player": "white",
-                "move": [
-                  1,
-                  4
-                ]
-              },
-              {
-                "player": "black",
-                "move": [
-                  1,
-                  2
-                ]
-              }
-            ]
-          }
-        ],
+        "successCondition": "prevent-white-two-eyes",
         "isUniqueFirstMove": true,
         "wrongFirstMoveDefense": {
           "move": [
@@ -983,40 +875,32 @@
       },
       "verification": {
         "status": "not-strictly-verified",
-        "shortestWinLength": 3,
+        "shortestWinLength": 1,
         "nodeCount": null,
-        "bestDefenseLine": [
-          {
-            "player": "white",
-            "move": [
-              1,
-              2
-            ]
-          }
-        ],
-        "verifiedAt": "2026-03-22",
-        "solverVersion": "legacy-browser-app-guided-line"
+        "bestDefenseLine": [],
+        "verifiedAt": "2026-04-11",
+        "solverVersion": "legacy-browser-app-prevent-white-two-eyes"
       },
       "metadata": {
         "difficulty": "hard",
         "tags": [
           "6x6",
           "kill",
-          "three-move",
+          "one-move",
           "top-edge",
           "straight-three-eye"
         ],
         "source": "user-specified-start-position",
         "author": "Codex",
         "createdAt": "2026-03-22",
-        "updatedAt": "2026-03-22"
+        "updatedAt": "2026-04-11"
       },
       "ui": {
-        "prompt": "黒番です。3手で白を殺してください。",
-        "subtitle": "上辺の大きな白一眼を中央から殺す問題です。",
-        "note": "第8問は黒先白死の3手詰めです。\n正しい初手のあと、0.5秒後に白が最強に応じます。\n4-2を外すと、白が4-2に打って2眼で生きる形を自動で確認できます。",
+        "prompt": "黒番です。1手で白の2眼をつぶしてください。",
+        "subtitle": "上辺の大きな白一眼を中央からつぶす問題です。",
+        "note": "第8問は黒先白死の1手詰めです。\n4-2が正解です。\nこの1手で白は2眼を作れなくなります。",
         "hint": "3つ並んだ空点の真ん中、4-2が急所です。",
-        "explanation": "4-2に打つと白の一眼が左右2つの逃げ道に分かれます。白はどちらか一方しか守れないので、黒が反対側をふさげば上辺の白全体が取れます。逆に黒が4-2を外すと、白がそこへ打って2眼で生きます。"
+        "explanation": "4-2に打つと白の2眼の形が崩れます。白は左右の空点を同時に眼にできないので、白の死が確定し、この時点で正解です。"
       }
     },
     {

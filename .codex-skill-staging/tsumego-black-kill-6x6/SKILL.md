@@ -51,6 +51,7 @@ Start from White's eye shape or escape shape, then design the killing move seque
 1. Decide whether the problem is 1-move or guided multi-move.
 
 - If White should die immediately, a single winning first move is enough.
+- If Black's move prevents White from ever making two eyes, treat that point as solved. Use `solutions.successCondition: "prevent-white-two-eyes"` and do not require an automatic White reply.
 - If the intended answer is 3 moves or longer, encode the reading with `solutions.principalVariation`.
 
 2. Define the target clearly.
@@ -61,6 +62,7 @@ Start from White's eye shape or escape shape, then design the killing move seque
 3. Build the sequence around the vital point.
 
 - The correct black first move should either remove White's last liberty or collapse the eye shape so the guided line finishes the kill.
+- For "prevent White's two eyes" problems, the correct black move only needs to collapse the eye shape and make White's death certain.
 - If the puzzle is 3-move, White's guided reply should be the strongest local defense and Black's final move should actually capture the target.
 
 4. Check alternate starts.
@@ -80,6 +82,7 @@ Edit `data/canonical/tsumego-canonical.json`.
 - Use `goalType: "kill"`.
 - Put the starting board in `initialPosition.rows`.
 - Put the first correct move in `solutions.winningFirstMoves`.
+- For one-move eye-shape kills where White's death is certain after Black occupies the vital point, put `solutions.successCondition: "prevent-white-two-eyes"` and keep `verification.shortestWinLength` at `1`.
 - For 3-move problems, put the full `black -> white -> black` line in `solutions.principalVariation`.
 - If a wrong first move should let White settle immediately, encode the forced white reply in `solutions.wrongFirstMoveDefense`.
 - Keep display text in `ui`.
@@ -111,5 +114,6 @@ NODE
 This project already supports guided principal-variation tsumego for `kill` problems.
 
 - Use that only when the intended line is explicit and stable.
+- Do not use a guided line just to show White's doomed reply after Black has already prevented two eyes.
 - Keep `verification.status` honest when the problem has not been solver-proven against all legal replies.
 - If `wrongFirstMoveDefense` is present, make sure the forced white move is legal after plausible wrong starts and actually stabilizes White in the intended way.

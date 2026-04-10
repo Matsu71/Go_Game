@@ -62,6 +62,7 @@ Spawn **3 agents by default**.
 - candidate `initialPosition.rows`
 - `target.groups`
 - intended correct line
+- whether the puzzle should use `solutions.successCondition: "prevent-white-two-eyes"` instead of a guided White reply
 - why White dies
 
 `Tactical Auditor` must return:
@@ -71,6 +72,7 @@ Spawn **3 agents by default**.
 - at least one wrong black first move
 - White's best local defense
 - whether a forced `wrongFirstMoveDefense` should be encoded
+- whether White's death is already certain when Black prevents two eyes
 - whether the final black move actually captures the target
 - whether the guided line feels natural
 
@@ -95,7 +97,8 @@ Do not ship a new `黒先白死` puzzle until all of these are true:
 
 - The intended first move is legal.
 - The target white group exists in the start position.
-- The intended line kills White in the stated move count.
+- For `solutions.successCondition: "prevent-white-two-eyes"`, the intended first move collapses White's two-eye shape, solves immediately, and does not queue auto-white.
+- For guided problems, the intended line kills White in the stated move count.
 - At least one plausible wrong move fails.
 - If `wrongFirstMoveDefense` is configured, White's forced reply is legal after wrong starts and reproduces the intended White settlement.
 - The puzzle is not substantially similar to an existing one.

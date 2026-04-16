@@ -87,9 +87,11 @@ Spawn **3 agents by default**.
 
 1. Main agent reads the current relevant puzzle data and user constraints.
 2. Main agent reads nearby existing problems in canonical before delegating.
-3. Main agent spawns the 3 default agents in parallel.
-4. Main agent chooses one final candidate.
-5. Main agent updates canonical, regenerates exports, and runs validation.
+3. Main agent checks for an exact duplicate in canonical by comparing starting board, goal, target white group, and intended solution.
+4. If the requested problem is exactly the same as an existing problem, stop without editing files or regenerating exports and tell the user which existing `第N問` it matches.
+5. Main agent spawns the 3 default agents in parallel.
+6. Main agent chooses one final candidate.
+7. Main agent updates canonical, regenerates exports, and runs validation.
 
 ## Validation standard
 

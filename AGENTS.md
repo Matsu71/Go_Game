@@ -25,6 +25,7 @@ Use these files as the default places to retain project know-how:
 - Do not add or edit problems directly in `data/export/solver/tsumego-problems.json`.
 - Update canonical first, then regenerate exports, then validate.
 - Browser-visible problem numbers are canonical for numbering. Keep each problem's array order, `title` (`第N問`), and `id` (`problem-N`) aligned.
+- Before creating or revising a requested tsumego, compare the request with `data/canonical/tsumego-canonical.json`. If the requested problem is exactly the same as an existing problem, including the starting board, goal, target group, and intended solution, make no file changes, do not regenerate exports, do not commit or push, and tell the user it is the same as the existing `第N問`.
 - For `黒先白死` problems where Black's correct move prevents White's two eyes and White's death is already certain, treat that move as the solving move. Encode `solutions.successCondition: "prevent-white-two-eyes"`, keep `verification.shortestWinLength` at `1`, and do not require a guided automatic White reply.
 - For guided `黒先黒生き` problems, if a wrong later black move should trigger a specific White refutation, encode it in `solutions.wrongGuidedMoveDefenses` instead of relying on generic auto-White heuristics. For example, when Black's first guided stone becomes the target, White should be forced to attack that stone so Black cannot still make two eyes on the next move.
 
@@ -40,6 +41,8 @@ Full check:
 ```bash
 npm run check
 ```
+
+When requested work changes project files, run the appropriate checks, commit the finished change, and push the current branch unless the user explicitly says not to.
 
 ## Knowledge Capture Policy
 

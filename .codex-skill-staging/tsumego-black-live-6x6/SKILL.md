@@ -55,6 +55,12 @@ node scripts/validate-tsumego.js
 
 ## Problem-building workflow
 
+0. Check exact duplicates first.
+
+- Compare the requested board, goal, target black group, and intended solution against existing canonical problems.
+- If it is exactly the same as an existing problem, do not edit files or regenerate exports. Tell the user which existing `第N問` it matches and stop.
+- If it is only similar, continue with design and call out the relevant difference.
+
 1. Decide the target outcome.
 
 - Black must live.

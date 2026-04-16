@@ -48,6 +48,12 @@ Start from White's eye shape or escape shape, then design the killing move seque
 
 ## Problem-building workflow
 
+0. Check exact duplicates first.
+
+- Compare the requested board, goal, target white group, and intended solution against existing canonical problems.
+- If it is exactly the same as an existing problem, do not edit files or regenerate exports. Tell the user which existing `第N問` it matches and stop.
+- If it is only similar, continue with design and call out the relevant difference.
+
 1. Decide whether the problem is 1-move or guided multi-move.
 
 - If White should die immediately, a single winning first move is enough.

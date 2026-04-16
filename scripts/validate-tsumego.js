@@ -52,6 +52,22 @@ function readBoardCell(rows, row, col) {
   return ".";
 }
 
+function serializeBoardRows(app, board) {
+  return board.map((row) =>
+    row.map((cell) => {
+      if (cell === app.BLACK) {
+        return "B";
+      }
+
+      if (cell === app.WHITE) {
+        return "W";
+      }
+
+      return ".";
+    }).join("")
+  );
+}
+
 function getExpectedTargetCell(problem) {
   return problem.target?.color === "black" ? "B" : "W";
 }
@@ -400,6 +416,18 @@ function validatePrincipalVariation(app, state, problem, label) {
     addError(`[${label}] principalVariation does not finish with a solved tsumego state.`);
   }
 
+  if (Array.isArray(problem.verification?.expectedFinalRows)) {
+    const actualFinalRows = serializeBoardRows(app, finalState.board);
+
+    if (JSON.stringify(actualFinalRows) !== JSON.stringify(problem.verification.expectedFinalRows)) {
+      addError(
+        `[${label}] principalVariation final rows ${JSON.stringify(
+          actualFinalRows
+        )} do not match verification.expectedFinalRows ${JSON.stringify(problem.verification.expectedFinalRows)}.`
+      );
+    }
+  }
+
   if (problem.verification?.shortestWinLength !== principalVariation.length) {
     addError(
       `[${label}] verification.shortestWinLength ${JSON.stringify(
@@ -675,6 +703,25 @@ function validateCanonicalProblem(problem, index) {
     addError(`[${label}] verification.status is required.`);
   } else if (isPreventWhiteTwoEyesProblem(problem) && problem.verification.shortestWinLength !== 1) {
     addError(`[${label}] prevent-white-two-eyes problems must use verification.shortestWinLength = 1.`);
+  }
+
+  if (problem.verification?.expectedFinalRows !== undefined) {
+    const expectedFinalRows = problem.verification.expectedFinalRows;
+
+    if (!Array.isArray(expectedFinalRows) || expectedFinalRows.length !== boardSize) {
+      addError(`[${label}] verification.expectedFinalRows must contain exactly ${boardSize} strings when present.`);
+    } else {
+      expectedFinalRows.forEach((rowText, rowIndex) => {
+        if (typeof rowText !== "string" || rowText.length !== boardSize) {
+          addError(`[${label}] verification.expectedFinalRows[${rowIndex}] must be a string of length ${boardSize}.`);
+          return;
+        }
+
+        if (!/^[.BW]+$/.test(rowText)) {
+          addError(`[${label}] verification.expectedFinalRows[${rowIndex}] contains characters other than ., B, W.`);
+        }
+      });
+    }
   }
 
   if (!problem.metadata || !Array.isArray(problem.metadata.tags)) {

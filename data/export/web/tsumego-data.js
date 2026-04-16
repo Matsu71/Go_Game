@@ -1483,15 +1483,15 @@
     {
       "id": "problem-11",
       "title": "第11問",
-      "subtitle": "五目中手の急所",
+      "subtitle": "角の急所を打つ5手詰め",
       "boardSize": 6,
       "rows": [
-        "BWWWWB",
-        "BW.WWB",
-        "BW..WB",
-        "BW..WB",
-        "BWWWWB",
-        "BBBBBB"
+        "..WWBB",
+        "...WBB",
+        "WWWWBB",
+        "BBBBBB",
+        "......",
+        "......"
       ],
       "turn": "black",
       "goalType": "kill",
@@ -1504,10 +1504,6 @@
             "stones": [
               [
                 0,
-                1
-              ],
-              [
-                0,
                 2
               ],
               [
@@ -1515,20 +1511,12 @@
                 3
               ],
               [
-                0,
-                4
-              ],
-              [
-                1,
-                1
-              ],
-              [
                 1,
                 3
               ],
               [
-                1,
-                4
+                2,
+                0
               ],
               [
                 2,
@@ -1536,31 +1524,11 @@
               ],
               [
                 2,
-                4
-              ],
-              [
-                3,
-                1
-              ],
-              [
-                3,
-                4
-              ],
-              [
-                4,
-                1
-              ],
-              [
-                4,
                 2
               ],
               [
-                4,
+                2,
                 3
-              ],
-              [
-                4,
-                4
               ]
             ]
           }
@@ -1569,10 +1537,6 @@
       "targetStones": [
         [
           0,
-          1
-        ],
-        [
-          0,
           2
         ],
         [
@@ -1580,20 +1544,12 @@
           3
         ],
         [
-          0,
-          4
-        ],
-        [
-          1,
-          1
-        ],
-        [
           1,
           3
         ],
         [
-          1,
-          4
+          2,
+          0
         ],
         [
           2,
@@ -1601,31 +1557,11 @@
         ],
         [
           2,
-          4
-        ],
-        [
-          3,
-          1
-        ],
-        [
-          3,
-          4
-        ],
-        [
-          4,
-          1
-        ],
-        [
-          4,
           2
         ],
         [
-          4,
+          2,
           3
-        ],
-        [
-          4,
-          4
         ]
       ],
       "constraints": {
@@ -1638,8 +1574,8 @@
         "winningFirstMoves": [
           {
             "move": [
-              2,
-              2
+              1,
+              1
             ],
             "label": "main",
             "isPrimary": true
@@ -1649,15 +1585,29 @@
           {
             "player": "black",
             "move": [
-              2,
-              2
+              1,
+              1
             ]
           },
           {
             "player": "white",
             "move": [
-              3,
-              3
+              0,
+              0
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              0
             ]
           },
           {
@@ -1666,28 +1616,14 @@
               1,
               2
             ]
-          },
-          {
-            "player": "white",
-            "move": [
-              3,
-              2
-            ]
-          },
-          {
-            "player": "black",
-            "move": [
-              2,
-              3
-            ]
           }
         ],
         "alternativeLines": [],
         "isUniqueFirstMove": true
       },
       "solution": [
-        2,
-        2
+        1,
+        1
       ],
       "verification": {
         "status": "not-strictly-verified",
@@ -1697,17 +1633,25 @@
           {
             "player": "white",
             "move": [
-              3,
-              3
+              0,
+              0
             ]
           },
           {
             "player": "white",
             "move": [
-              3,
-              2
+              1,
+              0
             ]
           }
+        ],
+        "expectedFinalRows": [
+          ".B..BB",
+          ".BB.BB",
+          "....BB",
+          "BBBBBB",
+          "......",
+          "......"
         ],
         "verifiedAt": "2026-04-17",
         "solverVersion": "legacy-browser-app-guided-line"
@@ -1718,25 +1662,25 @@
           "6x6",
           "kill",
           "five-move",
-          "bulky-five",
-          "nakade"
+          "corner-vital-point",
+          "liberty-squeeze"
         ],
-        "source": "yasashiigo-basic-3-7-inspired-6x6-reduction",
+        "source": "public-pattern-inspired-6x6-reduction",
         "author": "Codex",
         "createdAt": "2026-04-17",
         "updatedAt": "2026-04-17"
       },
       "ui": {
-        "prompt": "黒先。白を殺してください。",
-        "subtitle": "五目中手の急所",
-        "note": "中央の急所を逃すと白に生きられます。",
-        "hint": "まずは白の眼形の中心を見てください。",
-        "explanation": "黒1が五目中手の急所です。ここを打つと白の内部眼形が狭まり、白の抵抗に対しても継続して一眼化できます。正解初手以外では白に生きを許します。"
+        "prompt": "黒番です。白を殺してください。",
+        "subtitle": "角の急所を打つ5手詰め",
+        "note": "左上の白1群が対象です。局所で読めます。",
+        "hint": "最初は白の息の中心点に注目してください。",
+        "explanation": "2行2列が急所です。ここに打つと白の息が中央から圧縮され、白がどこに粘っても黒が呼吸点を順に消して取り切れます。"
       },
-      "prompt": "黒先。白を殺してください。",
-      "note": "中央の急所を逃すと白に生きられます。",
-      "hint": "まずは白の眼形の中心を見てください。",
-      "explanation": "黒1が五目中手の急所です。ここを打つと白の内部眼形が狭まり、白の抵抗に対しても継続して一眼化できます。正解初手以外では白に生きを許します。"
+      "prompt": "黒番です。白を殺してください。",
+      "note": "左上の白1群が対象です。局所で読めます。",
+      "hint": "最初は白の息の中心点に注目してください。",
+      "explanation": "2行2列が急所です。ここに打つと白の息が中央から圧縮され、白がどこに粘っても黒が呼吸点を順に消して取り切れます。"
     }
   ]
 };

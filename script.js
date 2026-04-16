@@ -114,6 +114,26 @@ function isPreventWhiteTwoEyesProblem(problem) {
   return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-white-two-eyes";
 }
 
+function isPreventTargetTwoEyesProblem(problem) {
+  return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-target-two-eyes";
+}
+
+function normalizePlayer(player, fallback = BLACK) {
+  return player === WHITE || player === BLACK ? player : fallback;
+}
+
+function formatPlayerName(player) {
+  return player === WHITE ? "白" : "黒";
+}
+
+function getTsumegoAttackerColor(problem) {
+  return normalizePlayer(problem.turn, BLACK);
+}
+
+function getTsumegoDefenderColor(problem) {
+  return getOpponent(getTsumegoAttackerColor(problem));
+}
+
 function isTsumegoWinningFirstMove(problem, row, col) {
   return (problem.solutions?.winningFirstMoves ?? []).some((entry) => isSameMove(entry?.move, [row, col]));
 }
@@ -167,12 +187,13 @@ function getTsumegoProblem(problemId = TSUMEGO_PROBLEMS[0].id) {
 
 function createTsumegoState(problemId = TSUMEGO_PROBLEMS[0].id) {
   const problem = getTsumegoProblem(problemId);
+  const firstPlayer = getTsumegoAttackerColor(problem);
 
   return {
     problemId: problem.id,
     board: cloneBoard(problem.board),
     previousBoard: null,
-    currentPlayer: BLACK,
+    currentPlayer: firstPlayer,
     captures: {
       [BLACK]: 0,
       [WHITE]: 0
@@ -655,6 +676,8 @@ function isSameMove(moveA, moveB) {
 }
 
 function createTsumegoSuccessMessage(problem) {
+  const targetName = formatPlayerName(getTsumegoTargetColor(problem));
+
   if (problem.goalType === "live") {
     if (getTsumegoShortestWinLength(problem) > 1) {
       return `正解です。${getTsumegoShortestWinLength(problem)}手で黒が2眼で生きました。\nこの局面から続きを打って確認できます。`;
@@ -664,17 +687,19 @@ function createTsumegoSuccessMessage(problem) {
   }
 
   if (problem.goalType === "kill" && getTsumegoShortestWinLength(problem) > 1) {
-    return `正解です。${getTsumegoShortestWinLength(problem)}手で白を殺しました。\nこの局面から続きを打って確認できます。`;
+    return `正解です。${getTsumegoShortestWinLength(problem)}手で${targetName}を殺しました。\nこの局面から続きを打って確認できます。`;
   }
 
-  if (isPreventWhiteTwoEyesProblem(problem)) {
-    return "正解です。白の2眼をつぶしました。\nこの局面から続きを打って確認できます。";
+  if (isPreventWhiteTwoEyesProblem(problem) || isPreventTargetTwoEyesProblem(problem)) {
+    return `正解です。${targetName}の2眼をつぶしました。\nこの局面から続きを打って確認できます。`;
   }
 
-  return "正解です。白を取りました。\nこの局面から続きを打って確認できます。";
+  return `正解です。${targetName}を取りました。\nこの局面から続きを打って確認できます。`;
 }
 
 function createTsumegoSuccessFeedback(problem) {
+  const targetName = formatPlayerName(getTsumegoTargetColor(problem));
+
   if (problem.goalType === "live") {
     if (getTsumegoShortestWinLength(problem) > 1) {
       return "白の応手を読んで2眼を完成させました。";
@@ -684,14 +709,14 @@ function createTsumegoSuccessFeedback(problem) {
   }
 
   if (problem.goalType === "kill" && getTsumegoShortestWinLength(problem) > 1) {
-    return "白の逃げ道をふさいで仕留めました。";
+    return `${targetName}の逃げ道をふさいで仕留めました。`;
   }
 
-  if (isPreventWhiteTwoEyesProblem(problem)) {
-    return "この1手で白は2眼を作れなくなりました。";
+  if (isPreventWhiteTwoEyesProblem(problem) || isPreventTargetTwoEyesProblem(problem)) {
+    return `この1手で${targetName}は2眼を作れなくなりました。`;
   }
 
-  return "この1手で白が取れました。";
+  return `この1手で${targetName}が取れました。`;
 }
 
 function createTsumegoFailureFeedback(problem) {
@@ -702,40 +727,44 @@ function createTsumegoFailureFeedback(problem) {
   return `この問題は${getTsumegoShortestWinLength(problem)}手詰めです。`;
 }
 
-function createGuidedAutoWhiteMessage(problem, hasFinalBlackMove) {
+function createGuidedAutoWhiteMessage(problem, hasFinalBlackMove, defenderPlayer = WHITE) {
+  const defenderName = formatPlayerName(defenderPlayer);
+
   if (problem.goalType === "live") {
     return hasFinalBlackMove
-      ? "白が応手しました。\n黒番で最後の1手を打って黒を生かしてください。"
-      : "白が応手しました。\n黒番で続きを打って黒を生かしてください。";
+      ? `${defenderName}が応手しました。\n黒番で最後の1手を打って黒を生かしてください。`
+      : `${defenderName}が応手しました。\n黒番で続きを打って黒を生かしてください。`;
   }
 
   if (problem.goalType === "kill") {
     return hasFinalBlackMove
-      ? "白が最強に応じました。\n黒番でトドメの1手を打ってください。"
-      : "白が最強に応じました。\n黒番で続きを打ってください。";
+      ? `${defenderName}が最強に応じました。\n次の1手でトドメを打ってください。`
+      : `${defenderName}が最強に応じました。\n続きを打ってください。`;
   }
 
   return hasFinalBlackMove
-    ? "白が応手しました。\n黒番で最後の1手を打ってください。"
-    : "白が応手しました。\n黒番で続きを打ってください。";
+    ? `${defenderName}が応手しました。\n最後の1手を打ってください。`
+    : `${defenderName}が応手しました。\n続きを打ってください。`;
 }
 
-function createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove) {
+function createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove, defenderPlayer = WHITE) {
+  const defenderName = formatPlayerName(defenderPlayer);
+
   if (problem.goalType === "live") {
     return hasFinalBlackMove
-      ? "白の応手まで進みました。最後の黒で2眼を完成させてください。"
-      : "白の応手まで進みました。";
+      ? `${defenderName}の応手まで進みました。最後の黒で2眼を完成させてください。`
+      : `${defenderName}の応手まで進みました。`;
   }
 
   if (problem.goalType === "kill") {
-    return hasFinalBlackMove ? "白の最強応手まで進みました。" : "白の応手まで進みました。";
+    return hasFinalBlackMove ? `${defenderName}の最強応手まで進みました。` : `${defenderName}の応手まで進みました。`;
   }
 
-  return "白の応手まで進みました。";
+  return `${defenderName}の応手まで進みました。`;
 }
 
 function getTsumegoTargetColor(problem) {
-  return problem.goalType === "live" ? BLACK : WHITE;
+  return normalizePlayer(problem.target?.color, problem.goalType === "live" ? BLACK : WHITE);
 }
 
 function getRemainingTsumegoTargetStones(board, problem) {
@@ -832,19 +861,25 @@ function isTsumegoTargetColorAliveByTwoEyes(board, problem, targetColor) {
 }
 
 function createForcedWrongFirstDefenseMessage(problem, board) {
-  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, WHITE)) {
-    return "不正解です。白が急所に打って2眼を作りました。\n黒番で続きを打って確認できます。";
+  const targetColor = getTsumegoTargetColor(problem);
+  const targetName = formatPlayerName(targetColor);
+
+  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, targetColor)) {
+    return `不正解です。${targetName}が急所に打って2眼を作りました。\nこの局面から続きを打って確認できます。`;
   }
 
-  return "不正解です。白が最強応手を返しました。\n黒番で続きを打って確認できます。";
+  return `不正解です。${targetName}が最強応手を返しました。\nこの局面から続きを打って確認できます。`;
 }
 
 function createForcedWrongFirstDefenseFeedback(problem, board) {
-  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, WHITE)) {
-    return "白が2眼で生きる形になりました。";
+  const targetColor = getTsumegoTargetColor(problem);
+  const targetName = formatPlayerName(targetColor);
+
+  if (problem.goalType === "kill" && isTsumegoTargetColorAliveByTwoEyes(board, problem, targetColor)) {
+    return `${targetName}が2眼で生きる形になりました。`;
   }
 
-  return "白の最強応手を自動で進めました。";
+  return `${targetName}の最強応手を自動で進めました。`;
 }
 
 function createTsumegoGameState(tsumegoState, currentPlayer = tsumegoState.currentPlayer) {
@@ -1002,9 +1037,9 @@ function createPendingAutoWhiteStep(tsumegoState, problem) {
 
 function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
   const principalVariation = getPrincipalVariation(problem);
-  const whiteEntry = principalVariation[tsumegoState.lineProgress];
+  const replyEntry = principalVariation[tsumegoState.lineProgress];
 
-  if (!whiteEntry || whiteEntry.player !== WHITE || !Array.isArray(whiteEntry.move)) {
+  if (!replyEntry || replyEntry.player !== tsumegoState.currentPlayer || !Array.isArray(replyEntry.move)) {
     return null;
   }
 
@@ -1012,12 +1047,12 @@ function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
     createTsumegoGameState(
       {
         ...tsumegoState,
-        currentPlayer: WHITE
+        currentPlayer: replyEntry.player
       },
-      WHITE
+      replyEntry.player
     ),
-    whiteEntry.move[0],
-    whiteEntry.move[1]
+    replyEntry.move[0],
+    replyEntry.move[1]
   );
 
   if (!moveResult.valid) {
@@ -1026,11 +1061,11 @@ function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
 
   const nextLineProgress = tsumegoState.lineProgress + 1;
   const nextEntry = principalVariation[nextLineProgress];
-  const promptForBlack = nextEntry && nextEntry.player === BLACK;
+  const promptForSolver = nextEntry && nextEntry.player === moveResult.nextState.currentPlayer;
   const remainingBlackMoves = principalVariation
     .slice(nextLineProgress)
-    .filter((entry) => entry.player === BLACK).length;
-  const hasFinalBlackMove = promptForBlack && remainingBlackMoves === 1;
+    .filter((entry) => entry.player === getTsumegoAttackerColor(problem)).length;
+  const hasFinalBlackMove = promptForSolver && remainingBlackMoves === 1;
 
   return {
     board: moveResult.nextState.board,
@@ -1042,18 +1077,19 @@ function createPendingGuidedAutoWhiteStep(tsumegoState, problem) {
     solved: false,
     failed: false,
     overlay: null,
-    phase: promptForBlack ? "guided-play" : "free-play",
-    message: promptForBlack
-      ? createGuidedAutoWhiteMessage(problem, hasFinalBlackMove)
-      : "白が応手しました。\nこの局面から続きを打って確認できます。",
-    feedback: promptForBlack
-      ? createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove)
-      : "白の応手まで自動で進めました。"
+    phase: promptForSolver ? "guided-play" : "free-play",
+    message: promptForSolver
+      ? createGuidedAutoWhiteMessage(problem, hasFinalBlackMove, replyEntry.player)
+      : `${formatPlayerName(replyEntry.player)}が応手しました。\nこの局面から続きを打って確認できます。`,
+    feedback: promptForSolver
+      ? createGuidedAutoWhiteFeedback(problem, hasFinalBlackMove, replyEntry.player)
+      : `${formatPlayerName(replyEntry.player)}の応手まで自動で進めました。`
   };
 }
 
 function createPendingForcedWrongFirstDefenseStep(tsumegoState, problem) {
   const forcedWrongFirstDefenseMove = getForcedWrongFirstDefenseMove(problem);
+  const defenderColor = getTsumegoDefenderColor(problem);
 
   if (!Array.isArray(forcedWrongFirstDefenseMove)) {
     return null;
@@ -1063,9 +1099,9 @@ function createPendingForcedWrongFirstDefenseStep(tsumegoState, problem) {
     createTsumegoGameState(
       {
         ...tsumegoState,
-        currentPlayer: WHITE
+        currentPlayer: defenderColor
       },
-      WHITE
+      defenderColor
     ),
     forcedWrongFirstDefenseMove[0],
     forcedWrongFirstDefenseMove[1]
@@ -1189,6 +1225,10 @@ function isTsumegoSolved(board, problem) {
     return isTsumegoLiveByTwoEyes(board, problem);
   }
 
+  if (isPreventTargetTwoEyesProblem(problem)) {
+    return !isTsumegoLiveByTwoEyes(board, problem);
+  }
+
   return problem.targetStones.every(([row, col]) => board[row][col] === EMPTY);
 }
 
@@ -1246,7 +1286,8 @@ function attemptTsumegoMove(tsumegoState, row, col) {
   if (hasGuidedTsumegoLine(problem)) {
     const principalVariation = getPrincipalVariation(problem);
     const expectedEntry = principalVariation[tsumegoState.lineProgress];
-    const moveMatchesLine = expectedEntry?.player === BLACK && isSameMove([row, col], expectedEntry.move);
+    const moveMatchesLine =
+      expectedEntry?.player === tsumegoState.currentPlayer && isSameMove([row, col], expectedEntry.move);
 
     if (!moveMatchesLine) {
       if (problem.goalType === "live") {
@@ -1341,7 +1382,7 @@ function attemptTsumegoMove(tsumegoState, row, col) {
       };
     }
 
-    if (nextEntry?.player === WHITE) {
+    if (nextEntry && nextEntry.player === progressedState.currentPlayer) {
       return {
         valid: true,
         nextState: queueGuidedAutoWhiteStep(

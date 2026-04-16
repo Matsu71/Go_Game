@@ -76,6 +76,18 @@ function isPreventWhiteTwoEyesProblem(problem) {
   return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-white-two-eyes";
 }
 
+function isPreventTargetTwoEyesProblem(problem) {
+  return problem.goalType === "kill" && problem.solutions?.successCondition === "prevent-target-two-eyes";
+}
+
+function normalizePlayer(player, fallback = "black") {
+  return player === "black" || player === "white" ? player : fallback;
+}
+
+function getTsumegoTargetColor(problem) {
+  return normalizePlayer(problem.target?.color, problem.goalType === "live" ? "black" : "white");
+}
+
 function normalizeMoveList(moves) {
   return moves.map((move) => JSON.stringify(move)).sort();
 }
@@ -360,31 +372,18 @@ function playPrincipalVariationToLineProgress(app, state, problem, lineProgress,
       return null;
     }
 
-    if (entry.player === "black") {
-      const result = app.attemptTsumegoMove(currentState, entry.move[0], entry.move[1]);
-
-      if (!result.valid) {
-        addError(`[${label}] principalVariation[${index}] black move ${JSON.stringify(entry.move)} is not playable.`);
+    if (currentState.phase === "awaiting-auto-white") {
+      if (!currentState.pendingAutoWhite) {
+        addError(`[${label}] principalVariation[${index}] expected pending auto reply, but none was queued.`);
         return null;
       }
 
-      if (result.nextState?.failed) {
-        addError(`[${label}] principalVariation[${index}] black move ${JSON.stringify(entry.move)} is marked as failed.`);
-        return null;
-      }
+      const pendingRows = serializeBoardRows(app, currentState.pendingAutoWhite.board);
+      const [row, col] = entry.move;
+      const expectedStone = entry.player === "black" ? "B" : "W";
 
-      currentState = result.nextState;
-      continue;
-    }
-
-    if (entry.player === "white") {
-      if (currentState.phase !== "awaiting-auto-white" || !currentState.pendingAutoWhite) {
-        addError(`[${label}] principalVariation[${index}] white move has no pending auto-white state.`);
-        return null;
-      }
-
-      if (currentState.pendingAutoWhite.board[entry.move[0]]?.[entry.move[1]] !== app.WHITE) {
-        addError(`[${label}] principalVariation[${index}] pending auto-white does not play ${JSON.stringify(entry.move)}.`);
+      if (pendingRows[row]?.[col] !== expectedStone) {
+        addError(`[${label}] principalVariation[${index}] pending auto reply does not play ${JSON.stringify(entry.move)}.`);
         return null;
       }
 
@@ -392,7 +391,26 @@ function playPrincipalVariationToLineProgress(app, state, problem, lineProgress,
       continue;
     }
 
-    addError(`[${label}] principalVariation[${index}].player must be "black" or "white".`);
+    if (entry.player === currentState.currentPlayer) {
+      const result = app.attemptTsumegoMove(currentState, entry.move[0], entry.move[1]);
+
+      if (!result.valid) {
+        addError(`[${label}] principalVariation[${index}] move ${JSON.stringify(entry.move)} is not playable.`);
+        return null;
+      }
+
+      if (result.nextState?.failed) {
+        addError(`[${label}] principalVariation[${index}] move ${JSON.stringify(entry.move)} is marked as failed.`);
+        return null;
+      }
+
+      currentState = result.nextState;
+      continue;
+    }
+
+    addError(
+      `[${label}] principalVariation[${index}] expects ${entry.player}, but current player is ${currentState.currentPlayer}.`
+    );
     return null;
   }
 
@@ -425,6 +443,26 @@ function validatePrincipalVariation(app, state, problem, label) {
           actualFinalRows
         )} do not match verification.expectedFinalRows ${JSON.stringify(problem.verification.expectedFinalRows)}.`
       );
+    }
+  }
+
+  if (Array.isArray(problem.verification?.finalPosition?.rows)) {
+    const actualFinalRows = serializeBoardRows(app, finalState.board);
+
+    if (JSON.stringify(actualFinalRows) !== JSON.stringify(problem.verification.finalPosition.rows)) {
+      addError(
+        `[${label}] principalVariation final rows ${JSON.stringify(
+          actualFinalRows
+        )} do not match verification.finalPosition.rows ${JSON.stringify(problem.verification.finalPosition.rows)}.`
+      );
+    }
+  }
+
+  if (isPreventTargetTwoEyesProblem(problem)) {
+    const targetColor = getTsumegoTargetColor(problem) === "black" ? app.BLACK : app.WHITE;
+
+    if (hasTargetColorAliveByTwoEyes(app, finalState.board, problem, targetColor)) {
+      addError(`[${label}] prevent-target-two-eyes final state leaves the target with two eyes.`);
     }
   }
 
@@ -686,16 +724,29 @@ function validateCanonicalProblem(problem, index) {
   }
 
   if (problem.solutions.successCondition !== undefined) {
-    if (problem.solutions.successCondition !== "prevent-white-two-eyes") {
-      addError(`[${label}] solutions.successCondition must be "prevent-white-two-eyes" when present.`);
+    if (!["prevent-white-two-eyes", "prevent-target-two-eyes"].includes(problem.solutions.successCondition)) {
+      addError(
+        `[${label}] solutions.successCondition must be "prevent-white-two-eyes" or "prevent-target-two-eyes" when present.`
+      );
     }
 
     if (problem.goalType !== "kill") {
       addError(`[${label}] solutions.successCondition is only supported for kill problems.`);
     }
 
-    if (Array.isArray(problem.solutions.principalVariation) && problem.solutions.principalVariation.length > 0) {
+    if (
+      problem.solutions.successCondition === "prevent-white-two-eyes" &&
+      Array.isArray(problem.solutions.principalVariation) &&
+      problem.solutions.principalVariation.length > 0
+    ) {
       addError(`[${label}] prevent-white-two-eyes problems should not define solutions.principalVariation.`);
+    }
+
+    if (
+      problem.solutions.successCondition === "prevent-target-two-eyes" &&
+      (!Array.isArray(problem.solutions.principalVariation) || problem.solutions.principalVariation.length === 0)
+    ) {
+      addError(`[${label}] prevent-target-two-eyes problems must define solutions.principalVariation.`);
     }
   }
 
@@ -703,6 +754,20 @@ function validateCanonicalProblem(problem, index) {
     addError(`[${label}] verification.status is required.`);
   } else if (isPreventWhiteTwoEyesProblem(problem) && problem.verification.shortestWinLength !== 1) {
     addError(`[${label}] prevent-white-two-eyes problems must use verification.shortestWinLength = 1.`);
+  }
+
+  if (problem.verification?.finalPosition !== undefined) {
+    const finalRows = problem.verification.finalPosition?.rows;
+
+    if (problem.verification.finalPosition?.format !== "rows" || !Array.isArray(finalRows)) {
+      addError(`[${label}] verification.finalPosition must use format = "rows" and include rows.`);
+    } else {
+      finalRows.forEach((rowText, rowIndex) => {
+        if (typeof rowText !== "string" || rowText.length !== boardSize || !/^[.BW]+$/.test(rowText)) {
+          addError(`[${label}] verification.finalPosition.rows[${rowIndex}] must be a board row string.`);
+        }
+      });
+    }
   }
 
   if (problem.verification?.expectedFinalRows !== undefined) {

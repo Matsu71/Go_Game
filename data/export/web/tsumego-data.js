@@ -1681,6 +1681,186 @@
       "note": "左上の白1群が対象です。局所で読めます。",
       "hint": "最初は白の息の中心点に注目してください。",
       "explanation": "2行2列が急所です。ここに打つと白の息が中央から圧縮され、白がどこに粘っても黒が呼吸点を順に消して取り切れます。"
+    },
+    {
+      "id": "problem-12",
+      "title": "第12問",
+      "subtitle": "隅の板六を6×6に縮約した局所死活です。",
+      "boardSize": 6,
+      "rows": [
+        "...BW.",
+        "...BW.",
+        "BBBBWW",
+        "WWWWW.",
+        "W.....",
+        "......"
+      ],
+      "turn": "white",
+      "goalType": "kill",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                3
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                2,
+                3
+              ]
+            ]
+          }
+        ]
+      },
+      "targetStones": [
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 3
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              1,
+              1
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "successCondition": "prevent-target-two-eyes",
+        "principalVariation": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              0
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "solution": [
+        1,
+        1
+      ],
+      "verification": {
+        "status": "pattern-and-browser-verified",
+        "shortestWinLength": 3,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          }
+        ],
+        "finalPosition": {
+          "format": "rows",
+          "rows": [
+            ".B.BW.",
+            "WW.BW.",
+            "BBBBWW",
+            "WWWWW.",
+            "W.....",
+            "......"
+          ]
+        },
+        "verifiedAt": "2026-04-17",
+        "solverVersion": "rectangular-six-corner-sgf-guided-line-v1"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "kill",
+          "white-to-kill",
+          "three-move",
+          "corner",
+          "rectangular-six",
+          "no-outside-liberties"
+        ],
+        "source": "public-rectangular-six-corner-pattern",
+        "sourceNote": "公開されている隅の板六の典型形を参考に 6×6 に縮約した問題。Sensei's Library の no outside liberties / White to kill 図をこの rows の向きに転置し、外ダメ 0 の局所形として検証。",
+        "author": "Codex",
+        "createdAt": "2026-04-17",
+        "updatedAt": "2026-04-17"
+      },
+      "ui": {
+        "prompt": "白先で黒を殺してください。",
+        "subtitle": "隅の板六を6×6に縮約した局所死活です。",
+        "note": "公開されている典型形を参考にした6×6縮約問題です。",
+        "hint": "左上の眼形の急所に注目してください。",
+        "explanation": "隅の板六は、外ダメ条件により生死が変わる代表的な形です。この問題では白が急所に先着し、黒の最強応手にも続けて打つことで黒を死形に追い込めます。"
+      },
+      "prompt": "白先で黒を殺してください。",
+      "note": "公開されている典型形を参考にした6×6縮約問題です。",
+      "hint": "左上の眼形の急所に注目してください。",
+      "explanation": "隅の板六は、外ダメ条件により生死が変わる代表的な形です。この問題では白が急所に先着し、黒の最強応手にも続けて打つことで黒を死形に追い込めます。"
     }
   ]
 };

@@ -1325,6 +1325,154 @@
         ],
         "positionHash": "9f8da5c5a4339887089d45efce2af55c6e3ce485"
       }
+    },
+    {
+      "id": "problem-12",
+      "title": "第12問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          "...BW.",
+          "...BW.",
+          "BBBBWW",
+          "WWWWW.",
+          "W.....",
+          "......"
+        ]
+      },
+      "turn": "white",
+      "goalType": "kill",
+      "target": {
+        "type": "groups",
+        "color": "black",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                3
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                2,
+                3
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 3
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              1,
+              1
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "successCondition": "prevent-target-two-eyes",
+        "principalVariation": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              0
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "verification": {
+        "status": "pattern-and-browser-verified",
+        "shortestWinLength": 3,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "black",
+            "move": [
+              0,
+              1
+            ]
+          }
+        ],
+        "finalPosition": {
+          "format": "rows",
+          "rows": [
+            ".B.BW.",
+            "WW.BW.",
+            "BBBBWW",
+            "WWWWW.",
+            "W.....",
+            "......"
+          ]
+        },
+        "verifiedAt": "2026-04-17",
+        "solverVersion": "rectangular-six-corner-sgf-guided-line-v1"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "kill",
+          "white-to-kill",
+          "three-move",
+          "corner",
+          "rectangular-six",
+          "no-outside-liberties"
+        ],
+        "source": "public-rectangular-six-corner-pattern",
+        "sourceNote": "公開されている隅の板六の典型形を参考に 6×6 に縮約した問題。Sensei's Library の no outside liberties / White to kill 図をこの rows の向きに転置し、外ダメ 0 の局所形として検証。",
+        "author": "Codex",
+        "createdAt": "2026-04-17",
+        "updatedAt": "2026-04-17"
+      },
+      "derived": {
+        "primaryWinningFirstMove": [
+          1,
+          1
+        ],
+        "positionHash": "ba9668b5b10340bc8d1dc48dc2302c480a05afb3"
+      }
     }
   ]
 }

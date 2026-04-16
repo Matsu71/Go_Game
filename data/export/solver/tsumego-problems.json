@@ -10,7 +10,7 @@
       "indexBase": 0
     },
     "createdAt": "2026-03-21",
-    "updatedAt": "2026-03-22",
+    "updatedAt": "2026-04-17",
     "canonicalSource": "data/canonical/tsumego-canonical.json"
   },
   "problems": [
@@ -1158,6 +1158,196 @@
           2
         ],
         "positionHash": "f02e7f2fe01992a53f0711214fc15b2bb5a2c435"
+      }
+    },
+    {
+      "id": "problem-11",
+      "title": "第11問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          "BWWWWB",
+          "BW.WWB",
+          "BW..WB",
+          "BW..WB",
+          "BWWWWB",
+          "BBBBBB"
+        ]
+      },
+      "turn": "black",
+      "goalType": "kill",
+      "target": {
+        "type": "groups",
+        "color": "white",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                4,
+                4
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 5
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              2,
+              2
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              2,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              2
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              2,
+              3
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 5,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              2
+            ]
+          }
+        ],
+        "verifiedAt": "2026-04-17",
+        "solverVersion": "legacy-browser-app-guided-line"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "kill",
+          "five-move",
+          "bulky-five",
+          "nakade"
+        ],
+        "source": "yasashiigo-basic-3-7-inspired-6x6-reduction",
+        "author": "Codex",
+        "createdAt": "2026-04-17",
+        "updatedAt": "2026-04-17"
+      },
+      "derived": {
+        "primaryWinningFirstMove": [
+          2,
+          2
+        ],
+        "positionHash": "b46816de4824ffabd48851a5e0317bc082eff5b1"
       }
     }
   ]

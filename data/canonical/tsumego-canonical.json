@@ -10,7 +10,7 @@
       "indexBase": 0
     },
     "createdAt": "2026-03-21",
-    "updatedAt": "2026-03-22"
+    "updatedAt": "2026-04-17"
   },
   "problems": [
     {
@@ -98,7 +98,7 @@
       "ui": {
         "prompt": "黒番です。1手で白を取ってください。",
         "subtitle": "6路盤の1手詰めです。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
+        "note": "第1問から第11問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
         "hint": null,
         "explanation": null
       }
@@ -198,7 +198,7 @@
       "ui": {
         "prompt": "黒番です。1手で白を取ってください。",
         "subtitle": "端の2子を1手で取る問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
+        "note": "第1問から第11問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
         "hint": null,
         "explanation": null
       }
@@ -296,7 +296,7 @@
       "ui": {
         "prompt": "黒番です。1手で白を取ってください。",
         "subtitle": "曲がった白の連を仕留める問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
+        "note": "第1問から第11問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
         "hint": null,
         "explanation": null
       }
@@ -386,7 +386,7 @@
       "ui": {
         "prompt": "黒番です。1手で白を取ってください。",
         "subtitle": "隅の白を1手で取る問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
+        "note": "第1問から第11問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
         "hint": null,
         "explanation": null
       }
@@ -488,7 +488,7 @@
       "ui": {
         "prompt": "黒番です。1手で白を取ってください。",
         "subtitle": "中に打って4子を取る問題です。",
-        "note": "第1問から第10問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
+        "note": "第1問から第11問まで入れています。\n詰碁はすべて6路盤で作る予定です。\n最初の1手で正解・不正解を判定し、その後も続きを確認できます。",
         "hint": null,
         "explanation": null
       }
@@ -1157,6 +1157,196 @@
         "note": "第10問は黒先黒生きの3手詰めです。\n正しい初手のあと、0.5秒後に白の応手が自動で進みます。\n最後の黒番で2眼を完成させてください。",
         "hint": "まず中央の急所に打って、白に上か下のどちらかを埋めさせます。",
         "explanation": "中央を押さえると白は上か下の眼形を1つしか埋められません。残った方を黒が打てば2眼です。"
+      }
+    },
+    {
+      "id": "problem-11",
+      "title": "第11問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          "BWWWWB",
+          "BW.WWB",
+          "BW..WB",
+          "BW..WB",
+          "BWWWWB",
+          "BBBBBB"
+        ]
+      },
+      "turn": "black",
+      "goalType": "kill",
+      "target": {
+        "type": "groups",
+        "color": "white",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                4
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                4,
+                4
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 5
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              2,
+              2
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              2,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              2
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              2
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              2,
+              3
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "verification": {
+        "status": "not-strictly-verified",
+        "shortestWinLength": 5,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              3,
+              2
+            ]
+          }
+        ],
+        "verifiedAt": "2026-04-17",
+        "solverVersion": "legacy-browser-app-guided-line"
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "tags": [
+          "6x6",
+          "kill",
+          "five-move",
+          "bulky-five",
+          "nakade"
+        ],
+        "source": "yasashiigo-basic-3-7-inspired-6x6-reduction",
+        "author": "Codex",
+        "createdAt": "2026-04-17",
+        "updatedAt": "2026-04-17"
+      },
+      "ui": {
+        "prompt": "黒先。白を殺してください。",
+        "subtitle": "五目中手の急所",
+        "note": "中央の急所を逃すと白に生きられます。",
+        "hint": "まずは白の眼形の中心を見てください。",
+        "explanation": "黒1が五目中手の急所です。ここを打つと白の内部眼形が狭まり、白の抵抗に対しても継続して一眼化できます。正解初手以外では白に生きを許します。"
       }
     }
   ]

@@ -340,7 +340,7 @@ function playPrincipalVariationToLineProgress(app, state, problem, lineProgress,
     const entry = principalVariation[index];
 
     if (!entry || !isIntegerPair(entry.move)) {
-      addError(`[${label}] principalVariation[${index}] is required before wrongGuidedMoveDefenses validation.`);
+      addError(`[${label}] principalVariation[${index}] is missing or does not contain a [row, col] move.`);
       return null;
     }
 
@@ -349,6 +349,11 @@ function playPrincipalVariationToLineProgress(app, state, problem, lineProgress,
 
       if (!result.valid) {
         addError(`[${label}] principalVariation[${index}] black move ${JSON.stringify(entry.move)} is not playable.`);
+        return null;
+      }
+
+      if (result.nextState?.failed) {
+        addError(`[${label}] principalVariation[${index}] black move ${JSON.stringify(entry.move)} is marked as failed.`);
         return null;
       }
 
@@ -376,6 +381,32 @@ function playPrincipalVariationToLineProgress(app, state, problem, lineProgress,
   }
 
   return currentState;
+}
+
+function validatePrincipalVariation(app, state, problem, label) {
+  const principalVariation = problem.solutions?.principalVariation;
+
+  if (!Array.isArray(principalVariation) || principalVariation.length === 0) {
+    return;
+  }
+
+  const finalState = playPrincipalVariationToLineProgress(app, state, problem, principalVariation.length, label);
+
+  if (!finalState) {
+    return;
+  }
+
+  if (!finalState.solved) {
+    addError(`[${label}] principalVariation does not finish with a solved tsumego state.`);
+  }
+
+  if (problem.verification?.shortestWinLength !== principalVariation.length) {
+    addError(
+      `[${label}] verification.shortestWinLength ${JSON.stringify(
+        problem.verification?.shortestWinLength
+      )} must match principalVariation length ${principalVariation.length}.`
+    );
+  }
 }
 
 function validateWrongGuidedMoveDefenses(app, state, problem, label) {
@@ -604,6 +635,28 @@ function validateCanonicalProblem(problem, index) {
     }
   }
 
+  if (problem.solutions.principalVariation !== undefined) {
+    if (!Array.isArray(problem.solutions.principalVariation)) {
+      addError(`[${label}] solutions.principalVariation must be an array when present.`);
+    } else {
+      problem.solutions.principalVariation.forEach((entry, entryIndex) => {
+        if (!entry || !["black", "white"].includes(entry.player)) {
+          addError(`[${label}] principalVariation[${entryIndex}].player must be "black" or "white".`);
+        }
+
+        if (!isIntegerPair(entry?.move)) {
+          addError(`[${label}] principalVariation[${entryIndex}].move must be [row, col].`);
+          return;
+        }
+
+        const [row, col] = entry.move;
+        if (!inBounds(row, col, boardSize)) {
+          addError(`[${label}] principalVariation[${entryIndex}].move is out of bounds: [${row}, ${col}].`);
+        }
+      });
+    }
+  }
+
   if (problem.solutions.successCondition !== undefined) {
     if (problem.solutions.successCondition !== "prevent-white-two-eyes") {
       addError(`[${label}] solutions.successCondition must be "prevent-white-two-eyes" when present.`);
@@ -730,6 +783,8 @@ function validateBrowserCompatibility(canonicalData) {
       validateLiveProblemDefense(app, state, exportedProblem, wrongLegalMoves, label);
       validateWrongGuidedMoveDefenses(app, state, exportedProblem, label);
     }
+
+    validatePrincipalVariation(app, state, exportedProblem, label);
   });
 }
 

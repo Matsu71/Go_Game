@@ -48,11 +48,12 @@ Start from White's eye shape or escape shape, then design the killing move seque
 
 ## Problem-building workflow
 
-0. Check exact duplicates first.
+0. Check duplicates and near-duplicates first.
 
 - Compare the requested board, goal, target white group, and intended solution against existing canonical problems.
-- If it is exactly the same as an existing problem, do not edit files or regenerate exports. Tell the user which existing `第N問` it matches and stop.
-- If it is only similar, continue with design and call out the relevant difference.
+- Also compare the local shape, vital point, killing idea, and solution after translation, reflection, rotation, or minor surrounding-stone differences such as stones existing on only one side.
+- If it is exactly the same as, or substantially similar to, an existing problem, do not edit files, regenerate exports, commit, or push. Tell the user which existing `第N問` it matches or is too similar to and stop.
+- If the user explicitly asks for a distinct variant, change the candidate enough that the target shape, vital point, or reading is clearly different before editing canonical.
 
 1. Decide whether the problem is 1-move or guided multi-move.
 

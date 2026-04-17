@@ -110,11 +110,11 @@ Every agent should return concise, structured results.
 
 1. Main agent reads the current relevant puzzle data and user constraints.
 2. Main agent reads nearby existing problems in `data/canonical/tsumego-canonical.json` before delegating.
-3. Main agent checks for an exact duplicate in canonical by comparing starting board, goal, target black group, and intended solution.
-4. If the requested problem is exactly the same as an existing problem, stop without editing files or regenerating exports and tell the user which existing `第N問` it matches.
+3. Main agent checks for an exact duplicate or near-duplicate in canonical by comparing starting board, goal, target black group, local shape, vital point, life-making idea, and intended solution.
+4. If the requested problem is exactly the same as, or substantially similar to, an existing problem after translation, reflection, rotation, or minor surrounding-stone differences, stop without editing files, regenerating exports, committing, or pushing and tell the user which existing `第N問` it matches or is too similar to.
 5. Main agent spawns the 3 default agents in parallel.
 6. Main agent waits for enough results to choose the best candidate.
-7. If the `Uniqueness Auditor` says the candidate is too similar or too ambiguous, reject it and loop back to puzzle design before editing files.
+7. If the `Uniqueness Auditor` says the candidate is too similar or too ambiguous, stop as a near-duplicate unless the user explicitly asks for a clearly distinct rebuild.
 8. Main agent synthesizes one final puzzle shape.
 9. Main agent updates canonical data, regenerates exports, and runs validation checks.
 
@@ -130,7 +130,7 @@ Do not ship a new `黒生き` puzzle until all of these are true:
 - White stones are sparse and purposeful.
 - On simple black-live problems, White's attack shape is robust enough that Black cannot easily kill White first through an obvious thin point.
 - The puzzle does not accidentally become a "capture all White" problem unless that is the explicit theme.
-- The candidate is not substantially similar to an existing problem in shape, idea, or vital point. If it is too similar, rebuild it.
+- The candidate is not substantially similar to an existing problem in shape, idea, or vital point. If it is too similar, stop as a near-duplicate unless the user explicitly asks for a clearly distinct rebuild.
 - The regenerated web and solver exports stay in sync with canonical.
 
 ## Multi-move caution

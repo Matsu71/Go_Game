@@ -55,11 +55,12 @@ node scripts/validate-tsumego.js
 
 ## Problem-building workflow
 
-0. Check exact duplicates first.
+0. Check duplicates and near-duplicates first.
 
 - Compare the requested board, goal, target black group, and intended solution against existing canonical problems.
-- If it is exactly the same as an existing problem, do not edit files or regenerate exports. Tell the user which existing `第N問` it matches and stop.
-- If it is only similar, continue with design and call out the relevant difference.
+- Also compare the local shape, vital point, life-making idea, and solution after translation, reflection, rotation, or minor surrounding-stone differences such as stones existing on only one side.
+- If it is exactly the same as, or substantially similar to, an existing problem, do not edit files, regenerate exports, commit, or push. Tell the user which existing `第N問` it matches or is too similar to and stop.
+- If the user explicitly asks for a distinct variant, change the candidate enough that the target shape, vital point, or reading is clearly different before editing canonical.
 
 1. Decide the target outcome.
 
@@ -100,7 +101,7 @@ node scripts/validate-tsumego.js
 
 - Compare the candidate with existing entries in `data/canonical/tsumego-canonical.json`.
 - Treat mirrored, shifted, rotated, or lightly decorated versions of the same local idea as too similar.
-- If the vital point and eye-making idea match an existing problem too closely, rebuild the candidate.
+- If the vital point and eye-making idea match an existing problem too closely, stop as a near-duplicate unless the user explicitly asks for a clearly distinct rebuild.
 
 ## Repo-specific implementation
 

@@ -1332,19 +1332,19 @@
       "initialPosition": {
         "format": "rows",
         "rows": [
-          "...BW.",
-          "...BW.",
-          "BBBBWW",
-          "WWWWW.",
-          "W.....",
+          "...WB.",
+          "...WB.",
+          "WWWWBB",
+          "BBBBB.",
+          "B.....",
           "......"
         ]
       },
-      "turn": "white",
+      "turn": "black",
       "goalType": "kill",
       "target": {
         "type": "groups",
-        "color": "black",
+        "color": "white",
         "groups": [
           {
             "id": "main",
@@ -1397,21 +1397,21 @@
         "successCondition": "prevent-target-two-eyes",
         "principalVariation": [
           {
-            "player": "white",
+            "player": "black",
             "move": [
               1,
               1
             ]
           },
           {
-            "player": "black",
+            "player": "white",
             "move": [
               0,
               1
             ]
           },
           {
-            "player": "white",
+            "player": "black",
             "move": [
               1,
               0
@@ -1427,7 +1427,7 @@
         "nodeCount": null,
         "bestDefenseLine": [
           {
-            "player": "black",
+            "player": "white",
             "move": [
               0,
               1
@@ -1437,40 +1437,41 @@
         "finalPosition": {
           "format": "rows",
           "rows": [
-            ".B.BW.",
-            "WW.BW.",
-            "BBBBWW",
-            "WWWWW.",
-            "W.....",
+            ".W.WB.",
+            "BB.WB.",
+            "WWWWBB",
+            "BBBBB.",
+            "B.....",
             "......"
           ]
         },
-        "verifiedAt": "2026-04-17",
-        "solverVersion": "rectangular-six-corner-sgf-guided-line-v1"
+        "verifiedAt": "2026-04-28",
+        "solverVersion": "rectangular-six-corner-color-swapped-guided-line-v1"
       },
       "metadata": {
         "difficulty": "hard",
         "tags": [
           "6x6",
           "kill",
-          "white-to-kill",
+          "black-to-kill",
+          "black-to-play",
           "three-move",
           "corner",
           "rectangular-six",
           "no-outside-liberties"
         ],
         "source": "public-rectangular-six-corner-pattern",
-        "sourceNote": "公開されている隅の板六の典型形を参考に 6×6 に縮約した問題。Sensei's Library の no outside liberties / White to kill 図をこの rows の向きに転置し、外ダメ 0 の局所形として検証。",
+        "sourceNote": "公開されている隅の板六の典型形を参考に 6×6 に縮約した問題。White to kill の参考図を色反転し、黒番で白を殺す問題として収録。",
         "author": "Codex",
         "createdAt": "2026-04-17",
-        "updatedAt": "2026-04-17"
+        "updatedAt": "2026-04-28"
       },
       "ui": {
-        "prompt": "白先で黒を殺してください。",
+        "prompt": "黒番です。白を殺してください。",
         "subtitle": "隅の板六を6×6に縮約した局所死活です。",
         "note": "公開されている典型形を参考にした6×6縮約問題です。",
         "hint": "左上の眼形の急所に注目してください。",
-        "explanation": "隅の板六は、外ダメ条件により生死が変わる代表的な形です。この問題では白が急所に先着し、黒の最強応手にも続けて打つことで黒を死形に追い込めます。"
+        "explanation": "隅の板六は、外ダメ条件により生死が変わる代表的な形です。この問題では黒が急所に先着し、白の最強応手にも続けて打つことで白を死形に追い込めます。"
       }
     }
   ]

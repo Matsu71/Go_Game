@@ -135,7 +135,7 @@ node scripts/validate-tsumego.js
 
 ## 6×6詰碁検証器
 
-`go_tsumego_verifier.py` は、ChatGPT 内の Python 実行環境でも動かせる標準ライブラリのみの軽量検証器です。初版では `黒先白死` の候補を対象に、合法手、連結グループ、呼吸点、捕獲、自殺手、主変化、target 捕獲、唯一初手の簡易探索を確認します。
+`go_tsumego_verifier.py` は、ChatGPT 内の Python 実行環境でも動かせる標準ライブラリのみの軽量検証器です。`黒先白死` の候補を対象に、合法手、連結グループ、呼吸点、捕獲、自殺手、主変化、target 捕獲、限定的な二眼判定、終形照合、唯一初手の簡易探索を確認します。
 
 ### CLI
 
@@ -170,6 +170,8 @@ python3 -m unittest test_go_tsumego_verifier.py
   "target": ["C3"],
   "winningFirstMoves": ["D3"],
   "principalVariation": ["D3", "C4", "D4"],
+  "successCondition": "capture-target",
+  "expectedFinalRows": ["......", "......", "......", "......", "......", "......"],
   "maxDepth": 7,
   "searchRadius": 2
 }
@@ -182,6 +184,8 @@ python3 -m unittest test_go_tsumego_verifier.py
 - `target`: 対象石の座標です。指定座標を含む連結グループを対象にします。
 - `winningFirstMoves`: 想定する正解初手です。
 - `principalVariation`: 黒白交互に再生する想定主変化です。
+- `successCondition`: `capture-target`、`prevent-target-two-eyes`、`prevent-white-two-eyes`、`capture-or-prevent-two-eyes` のいずれかです。省略時は後方互換のため `capture-target` として扱います。
+- `expectedFinalRows`: 主変化後の終形を固定したい場合に置きます。`verification.expectedFinalRows` や `verification.finalPosition.rows` 形式にも対応します。
 - `maxDepth`: 探索最大手数です。省略時は `7` です。
 - `searchRadius`: target 周辺の探索半径です。省略時は `2` です。
 
@@ -189,19 +193,35 @@ python3 -m unittest test_go_tsumego_verifier.py
 
 ### 出力JSON
 
-主なフィールドは以下です。
+主なフィールドは以下です。`ok` は fail-closed で、曖昧さ・探索打ち切り・枝刈り・未対応条件がある場合は原則 `false` になります。
 
-- `ok`: 採用候補として大きな矛盾がなければ `true` です。
+- `ok`: 採用候補として最低条件を満たす場合だけ `true` です。`ok: true` だけで採用せず、下記の詳細も確認します。
 - `legal`: 入力盤面と主変化が合法なら `true` です。
 - `principalVariationValid`: 主変化が合法に再生できたかを示します。
 - `targetCapturedInPV`: 主変化の最後で target が盤上から消えたかを示します。
+- `successConditionMet`: `successCondition` が満たされたかを示します。
+- `successMethod`: `capture-target` または `prevent-two-eyes` など、成功した方法です。
 - `winningFirstMovesVerified`: 検証器が勝ちと判定した想定初手です。
 - `alternativeWinningFirstMoves`: 想定初手以外で勝ちと判定した初手です。
 - `hasAlternativeFirstMove`: 別解初手が見つかった場合に `true` です。
 - `shortestWinLength`: 見つかった最短勝ち手数です。見つからない場合は `null` です。
+- `initialTargetGroup`: 初形で target 座標を含む連結グループ全体です。
+- `targetGroupHistory`: 主変化中の target グループ、呼吸点、白の伸びを追跡します。
+- `targetEyeAnalysis`: target の眼候補、真眼数、二眼有無、曖昧さです。
+- `expectedFinalRowsMatched`: `expectedFinalRows` がある場合の終形一致結果です。
+- `finalRowsDiff`: 終形不一致時の行単位 diff です。
+- `firstMoveAnalysis`: 全初手ごとの `win` / `loss` / `unknown` と理由です。
+- `bestDefenseLine`: 想定初手に対する白の最強抵抗線です。
+- `whiteDefenses`: 白応手ごとに黒がなお殺せるかを示します。
+- `searchCompleteness`: 全合法手を評価できたか、枝刈り・除外・探索打ち切りがあったかを示します。
 - `warnings`: コウ、反復、探索上の曖昧さなどです。
+- `warningDetails`: `INFO`、`LIMITATION`、`PRUNING`、`SEARCH_CUTOFF`、`KO_OR_REPETITION`、`AMBIGUOUS_LIFE_DEATH`、`UNSUPPORTED_SUCCESS_CONDITION` などの分類付き warning です。
 - `errors`: 入力不正や非合法手などです。
 - `pvBoards`: 初形と主変化各手後の盤面・target 状態です。
+
+`capture-target` は target グループが実際に盤上から消えることを要求します。`prevent-target-two-eyes` と `prevent-white-two-eyes` は target が残っていても、終形で二眼がないことを限定的な眼判定で確認します。二眼判定が曖昧な場合は `AMBIGUOUS_LIFE_DEATH` warning を出し、`ok` は `false` になります。
+
+`PRUNING`、`SEARCH_CUTOFF`、`AMBIGUOUS_LIFE_DEATH`、`UNSUPPORTED_SUCCESS_CONDITION` が出た場合は採用しません。`warnings` が空で、`searchCompleteness.allLegalMovesEvaluated: true`、`firstMoveAnalysis` に `unknown` がなく、想定外の `alternativeWinningFirstMoves` がない場合だけ採用候補として扱います。
 
 ### 運用手順
 
@@ -209,16 +229,18 @@ python3 -m unittest test_go_tsumego_verifier.py
 2. 候補を JSON 形式にします。
 3. `go_tsumego_verifier.py` に入力します。
 4. 出力 JSON を確認します。
-5. `ok: true` かつ `hasAlternativeFirstMove: false` なら採用候補にします。
-6. `warnings` がある場合は、人間または ChatGPT が再検討します。
-7. 不成立なら盤面を修正して再検証します。
+5. `ok: true`、`hasAlternativeFirstMove: false`、`warnings: []`、`searchCompleteness.allLegalMovesEvaluated: true` を満たすか確認します。
+6. `firstMoveAnalysis`、`whiteDefenses`、`targetEyeAnalysis`、`expectedFinalRowsMatched` を見て、人間の詰碁基準でも採用できるか再確認します。
+7. warning がある場合は採用せず、人間または ChatGPT が再検討します。
+8. 不成立なら盤面を修正して再検証します。
 
 ### 現時点の制限
 
-- 初版は `黒先白死` の target 捕獲を重視します。
+- 主対象は `黒先白死` です。
 - `黒生き`、セキ、高度な二眼判定、コウの完全判定、大規模全探索には未対応です。
 - コウや同一局面反復らしさを見つけた場合は `warnings` に出し、探索では打ち切ります。
-- 探索は target 周辺に候補手を絞るため、完全な囲碁AIではありません。
+- `fastMode` を使うと target 周辺に候補手を絞れますが、枝刈りが出た時点で `ok` は `false` です。通常は 6×6 で全合法手評価を優先します。
+- 二眼判定は限定実装です。強引に採用判定せず、曖昧なら `false` 寄りにします。
 - 盤面の自然さや詰碁としての美しさは判定しません。
 
 ## 再生成フロー

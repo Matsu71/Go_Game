@@ -8,6 +8,7 @@
     "validate:tsumego": "node scripts/validate-tsumego.js",
     "refresh:tsumego": "npm run build:tsumego && npm run validate:tsumego",
     "check:script": "node --check script.js",
-    "check": "npm run validate:tsumego && npm run check:script"
+    "test:verifier": "python3 -m unittest test_go_tsumego_verifier.py",
+    "check": "npm run validate:tsumego && npm run check:script && npm run test:verifier"
   }
 }

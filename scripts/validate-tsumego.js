@@ -724,9 +724,9 @@ function validateCanonicalProblem(problem, index) {
   }
 
   if (problem.solutions.successCondition !== undefined) {
-    if (!["prevent-white-two-eyes", "prevent-target-two-eyes"].includes(problem.solutions.successCondition)) {
+    if (!["capture-target", "prevent-white-two-eyes", "prevent-target-two-eyes"].includes(problem.solutions.successCondition)) {
       addError(
-        `[${label}] solutions.successCondition must be "prevent-white-two-eyes" or "prevent-target-two-eyes" when present.`
+        `[${label}] solutions.successCondition must be "capture-target", "prevent-white-two-eyes", or "prevent-target-two-eyes" when present.`
       );
     }
 

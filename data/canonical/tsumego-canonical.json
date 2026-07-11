@@ -10,7 +10,7 @@
       "indexBase": 0
     },
     "createdAt": "2026-03-21",
-    "updatedAt": "2026-04-17"
+    "updatedAt": "2026-07-11"
   },
   "problems": [
     {
@@ -1472,6 +1472,226 @@
         "note": "公開されている典型形を参考にした6×6縮約問題です。",
         "hint": "左上の眼形の急所に注目してください。",
         "explanation": "隅の板六は、外ダメ条件により生死が変わる代表的な形です。この問題では黒が急所に先着し、白の最強応手にも続けて打つことで白を死形に追い込めます。"
+      }
+    },
+    {
+      "id": "problem-13",
+      "title": "第13問",
+      "boardSize": 6,
+      "initialPosition": {
+        "format": "rows",
+        "rows": [
+          "BBBBBB",
+          "B.W..B",
+          "B.W..B",
+          "BWW.WB",
+          "BWWWWB",
+          "BBBBBB"
+        ]
+      },
+      "turn": "black",
+      "goalType": "kill",
+      "target": {
+        "type": "groups",
+        "color": "white",
+        "groups": [
+          {
+            "id": "main",
+            "stones": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                3,
+                2
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                4,
+                1
+              ],
+              [
+                4,
+                2
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                4,
+                4
+              ]
+            ]
+          }
+        ]
+      },
+      "constraints": {
+        "koRule": "simple-ko",
+        "allowSuicide": false,
+        "allowPass": false,
+        "maxDepth": 7
+      },
+      "solutions": {
+        "winningFirstMoves": [
+          {
+            "move": [
+              2,
+              3
+            ],
+            "label": "main",
+            "isPrimary": true
+          }
+        ],
+        "successCondition": "capture-target",
+        "principalVariation": [
+          {
+            "player": "black",
+            "move": [
+              2,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              2,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              2,
+              4
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              4
+            ]
+          }
+        ],
+        "alternativeLines": [],
+        "isUniqueFirstMove": true
+      },
+      "verification": {
+        "status": "verified-exhaustive",
+        "shortestWinLength": 7,
+        "nodeCount": null,
+        "bestDefenseLine": [
+          {
+            "player": "white",
+            "move": [
+              1,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              2,
+              1
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              3,
+              3
+            ]
+          },
+          {
+            "player": "white",
+            "move": [
+              2,
+              4
+            ]
+          },
+          {
+            "player": "black",
+            "move": [
+              1,
+              4
+            ]
+          }
+        ],
+        "expectedFinalRows": [
+          "BBBBBB",
+          "B..BBB",
+          "B..B.B",
+          "B..B.B",
+          "B....B",
+          "BBBBBB"
+        ],
+        "verifiedAt": "2026-07-11",
+        "solverVersion": "go_tsumego_verifier-v2.1-cycle-and-eye-group-aware-exhaustive"
+      },
+      "metadata": {
+        "difficulty": "very-hard",
+        "tags": [
+          "6x6",
+          "kill",
+          "black-to-kill",
+          "seven-move",
+          "unique-first-move",
+          "move-order",
+          "liberty-squeeze",
+          "exhaustive-verified"
+        ],
+        "source": "original-generated-and-exhaustively-verified",
+        "author": "ChatGPT",
+        "createdAt": "2026-07-11",
+        "updatedAt": "2026-07-11"
+      },
+      "ui": {
+        "prompt": "黒番です。7手以内に白を取り切ってください。",
+        "subtitle": "唯一の初手と正確な手順を読む7手詰めです。",
+        "note": "中央から下辺に連なる白9子が対象です。7手以内に取れる初手は1か所だけです。",
+        "hint": "中央の空間を外側から詰めず、まず上から3行目・左から4列目に注目してください。",
+        "explanation": "上から3行目・左から4列目が唯一の初手です。白の抵抗に合わせて上側、左側、中央右の順に呼吸点を整理し、最後に上から2行目・左から5列目へ打つと白9子を取り切れます。"
       }
     }
   ]

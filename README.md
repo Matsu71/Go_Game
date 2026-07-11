@@ -97,6 +97,8 @@
 
 共有保存には `cloudflare/worker.mjs` とCloudflare R2を使います。1データセットをR2上の `datasets/{dataset.id}.json` という別オブジェクトとして保持します。閲覧APIは公開、追加・更新・削除APIは `ADMIN_TOKEN` で保護します。管理トークンはブラウザに保存されません。
 
+現在の本番APIは `https://go-mini-app-tsumego-storage.pkmjjgzw2m.workers.dev` です。アプリには既定値として設定済みで、ミニ詰碁へ切り替えると共有データ一覧を自動取得します。
+
 初回だけ、Cloudflareアカウントを持つ管理者が次を実行します。
 
 ```bash
@@ -111,7 +113,7 @@ npm run cloudflare:deploy
 
 GitHub Pagesのホスト名を変更した場合は、`cloudflare/wrangler.jsonc` の `ALLOWED_ORIGINS` も変更して再デプロイしてください。現在は `https://matsu71.github.io` とローカル確認用URLだけを許可しています。
 
-Cloudflare側をローカル確認する場合は、プロジェクト直下にコミットしない `.dev.vars` を作って `ADMIN_TOKEN="..."` を入れ、次を実行します。
+Cloudflare側をローカル確認する場合は、`cloudflare/.dev.vars` に `ADMIN_TOKEN="..."` を入れ、次を実行します。このファイルはGit管理対象外です。現在の本番管理トークンもローカルの同ファイルに保存してあります。
 
 ```bash
 npm run cloudflare:dev

@@ -19,6 +19,7 @@ const TSUMEGO_DATA_KEY = "GO_APP_TSUMEGO_DATA";
 const TSUMEGO_LOCAL_DATASETS_KEY = "go-mini-app-tsumego-local-datasets-v1";
 const TSUMEGO_ACTIVE_DATASET_KEY = "go-mini-app-tsumego-active-dataset-v1";
 const TSUMEGO_CLOUD_API_URL_KEY = "go-mini-app-tsumego-cloud-api-url-v1";
+const TSUMEGO_DEFAULT_CLOUD_API_URL = "https://go-mini-app-tsumego-storage.pkmjjgzw2m.workers.dev";
 const TSUMEGO_MAX_UPLOAD_BYTES = 1024 * 1024;
 const TSUMEGO_MAX_PROBLEMS_PER_DATASET = 500;
 const TSUMEGO_DATA = getTsumegoData();
@@ -2015,6 +2016,7 @@ function initializeApp() {
   let currentTsumegoBoardSize = null;
   let activeTsumegoDatasetKey = "built-in";
   let cloudDatasetSummaries = [];
+  let cloudDatasetsLoaded = false;
   let selectedUploadDataset = null;
 
   function getCurrentBoardSize() {
@@ -2185,6 +2187,7 @@ function initializeApp() {
     });
     const payload = await readCloudResponse(response);
     cloudDatasetSummaries = Array.isArray(payload?.datasets) ? payload.datasets : [];
+    cloudDatasetsLoaded = true;
     rebuildTsumegoDatasetSelect();
 
     if (announce) {
@@ -2646,9 +2649,10 @@ function initializeApp() {
 
   if (tsumegoCloudApiUrlInput) {
     try {
-      tsumegoCloudApiUrlInput.value = localStorage.getItem(TSUMEGO_CLOUD_API_URL_KEY) ?? "";
+      tsumegoCloudApiUrlInput.value =
+        localStorage.getItem(TSUMEGO_CLOUD_API_URL_KEY) ?? TSUMEGO_DEFAULT_CLOUD_API_URL;
     } catch (error) {
-      tsumegoCloudApiUrlInput.value = "";
+      tsumegoCloudApiUrlInput.value = TSUMEGO_DEFAULT_CLOUD_API_URL;
     }
   }
 
@@ -2679,6 +2683,16 @@ function initializeApp() {
     modeToggleButton.addEventListener("click", () => {
       appMode = appMode === APP_MODE_GAME ? APP_MODE_TSUMEGO : APP_MODE_GAME;
       render();
+
+      if (
+        appMode === APP_MODE_TSUMEGO &&
+        !cloudDatasetsLoaded &&
+        tsumegoCloudApiUrlInput?.value
+      ) {
+        refreshCloudDatasets({ announce: false }).catch((error) => {
+          setTsumegoDatasetStatus(error.message, true);
+        });
+      }
     });
   }
 

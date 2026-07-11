@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "go-mini-app-tsumego-storage",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-07-11",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://matsu71.github.io,http://127.0.0.1:4173,http://localhost:4173"
+  },
+  "r2_buckets": [
+    {
+      "binding": "TSUMEGO_BUCKET",
+      "bucket_name": "go-mini-app-tsumego"
+    }
+  ],
+  "secrets": {
+    "required": ["ADMIN_TOKEN"]
+  }
+}

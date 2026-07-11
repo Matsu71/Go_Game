@@ -81,6 +81,52 @@
 
 `index.html` をブラウザで開くだけで動きます。
 
+## 外部の詰碁JSONを登録する
+
+ミニ詰碁画面の「問題データを追加・切り替え」から、正規データと同じ canonical JSON、またはブラウザ用 export JSON を読み込めます。標準問題は書き換えず、データセット単位で切り替えます。
+
+### この端末だけで使う
+
+1. JSONファイルを選びます。
+2. 「この端末に登録」を押します。
+3. 「表示するデータセット」から登録済みデータへ切り替えます。
+
+この方法はGitHub Pagesだけで動きます。データはブラウザの `localStorage` に保存されるため、別端末や別ブラウザには共有されません。同じ `dataset.id` をもう一度登録すると、その端末内の同名データを更新します。
+
+### 全端末で共有する
+
+共有保存には `cloudflare/worker.mjs` とCloudflare R2を使います。1データセットをR2上の `datasets/{dataset.id}.json` という別オブジェクトとして保持します。閲覧APIは公開、追加・更新・削除APIは `ADMIN_TOKEN` で保護します。管理トークンはブラウザに保存されません。
+
+初回だけ、Cloudflareアカウントを持つ管理者が次を実行します。
+
+```bash
+npx wrangler login
+npx wrangler r2 bucket create go-mini-app-tsumego
+openssl rand -hex 32
+npx wrangler secret put ADMIN_TOKEN --config cloudflare/wrangler.jsonc
+npm run cloudflare:deploy
+```
+
+`openssl` が表示した値を管理トークンとして保管し、`wrangler secret put` の入力にも同じ値を使います。デプロイ完了時に表示される `https://...workers.dev` URLを、アプリの「保存APIのURL」に入力します。
+
+GitHub Pagesのホスト名を変更した場合は、`cloudflare/wrangler.jsonc` の `ALLOWED_ORIGINS` も変更して再デプロイしてください。現在は `https://matsu71.github.io` とローカル確認用URLだけを許可しています。
+
+Cloudflare側をローカル確認する場合は、プロジェクト直下にコミットしない `.dev.vars` を作って `ADMIN_TOKEN="..."` を入れ、次を実行します。
+
+```bash
+npm run cloudflare:dev
+```
+
+### アップロード時の検査
+
+- JSONは1MB以下、1データセット500問以下です。
+- `dataset.id`、`dataset.name`、問題ID、タイトルが必要です。
+- 盤サイズは5〜9、盤面は同じ行列数の `.BW` 文字列です。
+- このプロジェクトの方針どおり、`turn` は `black` のみです。
+- `goalType` と `solutions.winningFirstMoves` を必須とし、正解初手が盤内か検査します。
+
+この検査はファイル形式と最低限の整合性を確認するものです。詰碁としての成立、別解、最善応手まではブラウザや保存APIでは再検証しません。公開用データを作る場合は、従来どおり canonical の検証フローも使ってください。
+
 ## 正規データ
 
 canonical は問題の唯一の元データです。UI や検証の都合で形を変えず、将来の再利用を優先して設計します。

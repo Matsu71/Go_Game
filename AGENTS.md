@@ -24,6 +24,8 @@ Use these files as the default places to retain project know-how:
 - Do not add or edit problems directly in `data/export/web/tsumego-data.js`.
 - Do not add or edit problems directly in `data/export/solver/tsumego-problems.json`.
 - Update canonical first, then regenerate exports, then validate.
+- User-imported datasets are separate runtime data and must not overwrite `data/canonical/tsumego-canonical.json`. Browser-local imports live in `localStorage`; shared imports live as `datasets/{dataset.id}.json` objects in the Cloudflare R2 bucket through `cloudflare/worker.mjs`.
+- Keep upload validation aligned between `script.js` and `cloudflare/worker.mjs`. Uploaded data must remain black-to-play and must pass structural validation, but runtime upload does not replace the canonical verifier workflow for publishing maintained problems.
 - Browser-visible problem numbers are canonical for numbering. Keep each problem's array order, `title` (`第N問`), and `id` (`problem-N`) aligned.
 - Tsumego problems must be black-operated only: either `黒先黒生き` (`turn: "black"`, `goalType: "live"`, black target) or `黒先白死` (`turn: "black"`, `goalType: "kill"`, white target). Do not add white-to-play problems or problems where the user kills Black; if a source position is White to kill Black, color-swap it before storing it in canonical.
 - Before creating or revising a requested tsumego, compare the request with `data/canonical/tsumego-canonical.json`. If the requested problem is exactly the same as, or substantially similar to, an existing problem, make no file changes, do not regenerate exports, do not commit or push, and tell the user it is the same or too similar to the existing `第N問`.

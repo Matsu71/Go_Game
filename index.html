@@ -53,6 +53,44 @@
       <div class="actions">
         <button id="tsumego-reset-button" class="control-button reset-button" type="button">問題をリセット</button>
       </div>
+      <details class="dataset-manager">
+        <summary>問題データを追加・切り替え</summary>
+        <div class="dataset-manager-content">
+          <label class="dataset-field" for="tsumego-dataset-select">
+            <span>表示するデータセット</span>
+            <select id="tsumego-dataset-select"></select>
+          </label>
+
+          <div class="dataset-section">
+            <h2>JSONファイルをこの端末に登録</h2>
+            <input id="tsumego-file-input" type="file" accept="application/json,.json">
+            <div class="dataset-actions">
+              <button id="tsumego-local-import-button" class="dataset-button" type="button">この端末に登録</button>
+              <button id="tsumego-local-delete-button" class="dataset-button secondary" type="button">端末内データを削除</button>
+            </div>
+            <p class="dataset-help">canonical形式またはブラウザ用export形式のJSONを選べます。端末内登録はGitHub Pagesだけで利用でき、このブラウザに保存されます。</p>
+          </div>
+
+          <div class="dataset-section">
+            <h2>Cloudflareで共有</h2>
+            <label class="dataset-field" for="tsumego-cloud-api-url">
+              <span>保存APIのURL</span>
+              <input id="tsumego-cloud-api-url" type="url" inputmode="url" placeholder="https://go-tsumego-storage.example.workers.dev">
+            </label>
+            <label class="dataset-field" for="tsumego-cloud-admin-token">
+              <span>管理トークン（アップロード時だけ使用）</span>
+              <input id="tsumego-cloud-admin-token" type="password" autocomplete="off">
+            </label>
+            <div class="dataset-actions">
+              <button id="tsumego-cloud-refresh-button" class="dataset-button secondary" type="button">共有データを更新</button>
+              <button id="tsumego-cloud-upload-button" class="dataset-button" type="button">選択中のJSONを共有</button>
+            </div>
+            <p class="dataset-help">APIのURLはこの端末に保存します。管理トークンは保存せず、問題の閲覧には不要です。</p>
+          </div>
+
+          <p id="tsumego-dataset-status" class="dataset-status" aria-live="polite"></p>
+        </div>
+      </details>
       <p id="tsumego-note" class="note">今回は第1問だけ入れています。
 詰碁はすべて6路盤で作る予定です。
 黒番で1手だけ打てます。</p>

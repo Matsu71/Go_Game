@@ -16,6 +16,11 @@ const LAYOUT_STORAGE_KEY = "go-mini-app-layout";
 const APP_MODE_GAME = "game";
 const APP_MODE_TSUMEGO = "tsumego";
 const TSUMEGO_DATA_KEY = "GO_APP_TSUMEGO_DATA";
+const TSUMEGO_LOCAL_DATASETS_KEY = "go-mini-app-tsumego-local-datasets-v1";
+const TSUMEGO_ACTIVE_DATASET_KEY = "go-mini-app-tsumego-active-dataset-v1";
+const TSUMEGO_CLOUD_API_URL_KEY = "go-mini-app-tsumego-cloud-api-url-v1";
+const TSUMEGO_MAX_UPLOAD_BYTES = 1024 * 1024;
+const TSUMEGO_MAX_PROBLEMS_PER_DATASET = 500;
 const TSUMEGO_DATA = getTsumegoData();
 const TSUMEGO_PROBLEMS = TSUMEGO_DATA.problems.map(normalizeTsumegoProblem);
 
@@ -138,19 +143,261 @@ function isTsumegoWinningFirstMove(problem, row, col) {
   return (problem.solutions?.winningFirstMoves ?? []).some((entry) => isSameMove(entry?.move, [row, col]));
 }
 
-function normalizeTsumegoProblem(problem) {
-  const boardSize = problem.boardSize ?? TSUMEGO_DATA.boardSize;
+function normalizeTsumegoProblem(problem, dataset = TSUMEGO_DATA) {
+  const boardSize = problem.boardSize ?? dataset.boardSize;
 
   return {
     ...problem,
     boardSize,
     goalType: problem.goalType ?? "capture",
     subtitle: problem.subtitle ?? problem.ui?.subtitle ?? "",
-    prompt: problem.prompt ?? problem.ui?.prompt ?? TSUMEGO_DATA.defaultPrompt,
-    note: problem.note ?? problem.ui?.note ?? TSUMEGO_DATA.defaultNote,
+    prompt: problem.prompt ?? problem.ui?.prompt ?? dataset.defaultPrompt ?? "黒番です。",
+    note: problem.note ?? problem.ui?.note ?? dataset.defaultNote ?? "",
     solution: getPrimaryWinningMove(problem),
     board: createBoardFromRows(problem.rows)
   };
+}
+
+function getUploadedProblemRows(problem) {
+  if (Array.isArray(problem?.rows)) {
+    return problem.rows;
+  }
+
+  if (problem?.initialPosition?.format === "rows" && Array.isArray(problem.initialPosition.rows)) {
+    return problem.initialPosition.rows;
+  }
+
+  return null;
+}
+
+function flattenUploadedTargetStones(problem) {
+  if (Array.isArray(problem?.targetStones)) {
+    return problem.targetStones.map((stone) => [...stone]);
+  }
+
+  if (Array.isArray(problem?.target?.groups)) {
+    const stones = problem.target.groups.flatMap((group) => Array.isArray(group?.stones) ? group.stones : []);
+    return [...new Set(stones.map((stone) => JSON.stringify(stone)))].map((stone) => JSON.parse(stone));
+  }
+
+  if (Array.isArray(problem?.target?.stones)) {
+    return problem.target.stones.map((stone) => [...stone]);
+  }
+
+  return [];
+}
+
+function validateUploadedMove(move, boardSize, label, errors) {
+  if (
+    !Array.isArray(move) ||
+    move.length !== 2 ||
+    !Number.isInteger(move[0]) ||
+    !Number.isInteger(move[1]) ||
+    move[0] < 0 ||
+    move[0] >= boardSize ||
+    move[1] < 0 ||
+    move[1] >= boardSize
+  ) {
+    errors.push(`${label} は盤内の [行, 列] で指定してください。`);
+  }
+}
+
+function prepareUploadedTsumegoDataset(input) {
+  const errors = [];
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("JSONの最上位はオブジェクトにしてください。");
+  }
+
+  const problems = input.problems;
+  const datasetId = input.dataset?.id ?? input.id;
+  const datasetName = input.dataset?.name ?? input.name ?? datasetId;
+
+  if (typeof datasetId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(datasetId)) {
+    errors.push("dataset.id は英数字で始まる64文字以内の英数字・ピリオド・ハイフン・アンダースコアにしてください。");
+  }
+
+  if (typeof datasetName !== "string" || datasetName.trim().length === 0 || datasetName.length > 100) {
+    errors.push("dataset.name は1〜100文字で指定してください。");
+  }
+
+  if (!Array.isArray(problems) || problems.length === 0) {
+    errors.push("problems に1問以上入れてください。");
+  } else if (problems.length > TSUMEGO_MAX_PROBLEMS_PER_DATASET) {
+    errors.push(`1データセットは${TSUMEGO_MAX_PROBLEMS_PER_DATASET}問以下にしてください。`);
+  }
+
+  const problemIds = new Set();
+  const webProblems = [];
+
+  (Array.isArray(problems) ? problems : []).forEach((problem, index) => {
+    const label = `problems[${index}]`;
+    const rows = getUploadedProblemRows(problem);
+    const boardSize = problem?.boardSize ?? (Array.isArray(rows) ? rows.length : null);
+
+    if (!problem || typeof problem !== "object" || Array.isArray(problem)) {
+      errors.push(`${label} はオブジェクトにしてください。`);
+      return;
+    }
+
+    if (typeof problem.id !== "string" || problem.id.trim().length === 0) {
+      errors.push(`${label}.id が必要です。`);
+    } else if (problemIds.has(problem.id)) {
+      errors.push(`${label}.id「${problem.id}」が重複しています。`);
+    } else {
+      problemIds.add(problem.id);
+    }
+
+    if (typeof problem.title !== "string" || problem.title.trim().length === 0) {
+      errors.push(`${label}.title が必要です。`);
+    }
+
+    if (!Number.isInteger(boardSize) || boardSize < 5 || boardSize > 9) {
+      errors.push(`${label}.boardSize は5〜9の整数にしてください。`);
+    }
+
+    if (
+      !Array.isArray(rows) ||
+      !Number.isInteger(boardSize) ||
+      rows.length !== boardSize ||
+      rows.some((row) => typeof row !== "string" || row.length !== boardSize || !/^[.BW]+$/.test(row))
+    ) {
+      errors.push(`${label} の盤面は boardSize 行の「.」「B」「W」だけの行文字列にしてください。`);
+    }
+
+    if (problem.turn !== BLACK) {
+      errors.push(`${label}.turn は black にしてください。`);
+    }
+
+    if (!["capture", "live", "kill"].includes(problem.goalType)) {
+      errors.push(`${label}.goalType は capture、live、kill のいずれかにしてください。`);
+    }
+
+    const targetStones = flattenUploadedTargetStones(problem);
+    const expectedTargetColor = problem.goalType === "live" ? BLACK : WHITE;
+    if (problem.target?.color !== expectedTargetColor) {
+      errors.push(`${label}.target.color は ${expectedTargetColor} にしてください。`);
+    }
+    if (targetStones.length === 0) {
+      errors.push(`${label}.target に対象石を1つ以上指定してください。`);
+    } else if (Number.isInteger(boardSize)) {
+      targetStones.forEach((stone, targetIndex) => {
+        const errorCount = errors.length;
+        validateUploadedMove(stone, boardSize, `${label}.target[${targetIndex}]`, errors);
+        if (
+          errors.length === errorCount &&
+          Array.isArray(rows) &&
+          rows[stone[0]]?.[stone[1]] !== (expectedTargetColor === BLACK ? "B" : "W")
+        ) {
+          errors.push(`${label}.target[${targetIndex}] の位置に対象色の石がありません。`);
+        }
+      });
+    }
+
+    const winningFirstMoves = problem.solutions?.winningFirstMoves;
+    if (!Array.isArray(winningFirstMoves) || winningFirstMoves.length === 0) {
+      errors.push(`${label}.solutions.winningFirstMoves が必要です。`);
+    } else if (Number.isInteger(boardSize)) {
+      winningFirstMoves.forEach((entry, moveIndex) => {
+        const errorCount = errors.length;
+        validateUploadedMove(entry?.move, boardSize, `${label}.solutions.winningFirstMoves[${moveIndex}].move`, errors);
+        if (
+          errors.length === errorCount &&
+          Array.isArray(rows) &&
+          rows[entry.move[0]]?.[entry.move[1]] !== "."
+        ) {
+          errors.push(`${label}.solutions.winningFirstMoves[${moveIndex}].move は空点にしてください。`);
+        }
+      });
+    }
+
+    if (Number.isInteger(boardSize) && Array.isArray(problem.solutions?.principalVariation)) {
+      problem.solutions.principalVariation.forEach((entry, moveIndex) => {
+        validateUploadedMove(entry?.move, boardSize, `${label}.solutions.principalVariation[${moveIndex}].move`, errors);
+        const expectedPlayer = moveIndex % 2 === 0 ? BLACK : WHITE;
+        if (entry?.player !== expectedPlayer) {
+          errors.push(`${label}.solutions.principalVariation[${moveIndex}].player は ${expectedPlayer} にしてください。`);
+        }
+      });
+    }
+
+    if (Number.isInteger(boardSize) && problem.solutions?.wrongFirstMoveDefense?.move) {
+      validateUploadedMove(
+        problem.solutions.wrongFirstMoveDefense.move,
+        boardSize,
+        `${label}.solutions.wrongFirstMoveDefense.move`,
+        errors
+      );
+    }
+
+    webProblems.push({
+      ...problem,
+      boardSize,
+      rows,
+      targetStones,
+      subtitle: problem.subtitle ?? problem.ui?.subtitle ?? "",
+      prompt: problem.prompt ?? problem.ui?.prompt ?? "黒番です。",
+      note: problem.note ?? problem.ui?.note ?? ""
+    });
+  });
+
+  if (errors.length > 0) {
+    const visibleErrors = errors.slice(0, 5).join("\n");
+    const remaining = errors.length > 5 ? `\nほか${errors.length - 5}件` : "";
+    throw new Error(`${visibleErrors}${remaining}`);
+  }
+
+  const boardSizes = [...new Set(webProblems.map((problem) => problem.boardSize))].sort((left, right) => left - right);
+  const webData = {
+    schemaVersion: input.schemaVersion ?? 1,
+    dataset: {
+      ...(input.dataset ?? {}),
+      id: datasetId,
+      name: datasetName
+    },
+    boardSize: boardSizes[0],
+    boardSizes,
+    defaultPrompt: input.defaultPrompt ?? "黒番です。",
+    defaultNote: input.defaultNote ?? "",
+    problems: webProblems
+  };
+
+  return {
+    raw: JSON.parse(JSON.stringify(input)),
+    webData,
+    summary: {
+      id: datasetId,
+      name: datasetName,
+      problemCount: webProblems.length,
+      schemaVersion: input.schemaVersion ?? 1
+    }
+  };
+}
+
+function replaceTsumegoProblems(webData) {
+  const normalizedProblems = webData.problems.map((problem) => normalizeTsumegoProblem(problem, webData));
+  TSUMEGO_PROBLEMS.splice(0, TSUMEGO_PROBLEMS.length, ...normalizedProblems);
+}
+
+function readLocalTsumegoDatasets() {
+  if (typeof localStorage === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(TSUMEGO_LOCAL_DATASETS_KEY) ?? "[]");
+    return Array.isArray(stored) ? stored : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeLocalTsumegoDatasets(datasets) {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(TSUMEGO_LOCAL_DATASETS_KEY, JSON.stringify(datasets));
 }
 
 function getTsumegoBoardSize(problem) {
@@ -1748,6 +1995,15 @@ function initializeApp() {
   const tsumegoFeedbackElement = document.getElementById("tsumego-feedback");
   const tsumegoNoteElement = document.getElementById("tsumego-note");
   const tsumegoResetButton = document.getElementById("tsumego-reset-button");
+  const tsumegoDatasetSelect = document.getElementById("tsumego-dataset-select");
+  const tsumegoFileInput = document.getElementById("tsumego-file-input");
+  const tsumegoLocalImportButton = document.getElementById("tsumego-local-import-button");
+  const tsumegoLocalDeleteButton = document.getElementById("tsumego-local-delete-button");
+  const tsumegoCloudApiUrlInput = document.getElementById("tsumego-cloud-api-url");
+  const tsumegoCloudAdminTokenInput = document.getElementById("tsumego-cloud-admin-token");
+  const tsumegoCloudRefreshButton = document.getElementById("tsumego-cloud-refresh-button");
+  const tsumegoCloudUploadButton = document.getElementById("tsumego-cloud-upload-button");
+  const tsumegoDatasetStatus = document.getElementById("tsumego-dataset-status");
 
   let appMode = APP_MODE_GAME;
   let state = createInitialState();
@@ -1757,6 +2013,9 @@ function initializeApp() {
   let tsumegoState = createTsumegoState();
   let tsumegoAutoWhiteTimeoutId = null;
   let currentTsumegoBoardSize = null;
+  let activeTsumegoDatasetKey = "built-in";
+  let cloudDatasetSummaries = [];
+  let selectedUploadDataset = null;
 
   function getCurrentBoardSize() {
     return getBoardSize(state.board);
@@ -1776,6 +2035,224 @@ function initializeApp() {
     }
 
     tsumegoAutoWhiteTimeoutId = null;
+  }
+
+  function setTsumegoDatasetStatus(message, isError = false) {
+    if (!tsumegoDatasetStatus) {
+      return;
+    }
+
+    tsumegoDatasetStatus.textContent = message;
+    tsumegoDatasetStatus.classList.toggle("error", isError);
+  }
+
+  function createDatasetOption(group, value, label) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    group.appendChild(option);
+  }
+
+  function rebuildTsumegoDatasetSelect() {
+    if (!tsumegoDatasetSelect) {
+      return;
+    }
+
+    tsumegoDatasetSelect.innerHTML = "";
+    const builtInGroup = document.createElement("optgroup");
+    builtInGroup.label = "標準";
+    createDatasetOption(
+      builtInGroup,
+      "built-in",
+      `${TSUMEGO_DATA.dataset?.name ?? "標準問題"}（${TSUMEGO_DATA.problems.length}問）`
+    );
+    tsumegoDatasetSelect.appendChild(builtInGroup);
+
+    const localDatasets = readLocalTsumegoDatasets();
+    if (localDatasets.length > 0) {
+      const localGroup = document.createElement("optgroup");
+      localGroup.label = "この端末";
+      localDatasets.forEach((entry) => {
+        const name = entry.name ?? entry.id;
+        const count = entry.problemCount ?? entry.dataset?.problems?.length ?? 0;
+        createDatasetOption(localGroup, `local:${entry.id}`, `${name}（${count}問）`);
+      });
+      tsumegoDatasetSelect.appendChild(localGroup);
+    }
+
+    if (cloudDatasetSummaries.length > 0) {
+      const cloudGroup = document.createElement("optgroup");
+      cloudGroup.label = "Cloudflare共有";
+      cloudDatasetSummaries.forEach((summary) => {
+        createDatasetOption(
+          cloudGroup,
+          `cloud:${summary.id}`,
+          `${summary.name ?? summary.id}（${summary.problemCount ?? 0}問）`
+        );
+      });
+      tsumegoDatasetSelect.appendChild(cloudGroup);
+    }
+
+    const hasActiveOption = Array.from(tsumegoDatasetSelect.options).some(
+      (option) => option.value === activeTsumegoDatasetKey
+    );
+    tsumegoDatasetSelect.value = hasActiveOption ? activeTsumegoDatasetKey : "built-in";
+
+    if (tsumegoLocalDeleteButton) {
+      tsumegoLocalDeleteButton.disabled = !activeTsumegoDatasetKey.startsWith("local:");
+    }
+  }
+
+  function rememberActiveTsumegoDataset(datasetKey) {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+
+    try {
+      localStorage.setItem(TSUMEGO_ACTIVE_DATASET_KEY, datasetKey);
+    } catch (error) {
+      // 保存できない環境でも、現在の画面では切り替えを続けます。
+    }
+  }
+
+  function activateTsumegoDataset(webData, datasetKey, message) {
+    clearTsumegoAutoWhiteTimeout();
+    replaceTsumegoProblems(webData);
+    activeTsumegoDatasetKey = datasetKey;
+    rememberActiveTsumegoDataset(datasetKey);
+    currentTsumegoBoardSize = null;
+    tsumegoState = createTsumegoState(TSUMEGO_PROBLEMS[0].id);
+    buildTsumegoProblemButtons();
+    rebuildTsumegoDatasetSelect();
+    renderTsumego();
+    setTsumegoDatasetStatus(message);
+  }
+
+  function normalizeCloudApiUrl(value) {
+    const normalizedValue = value.trim().replace(/\/+$/, "");
+    if (normalizedValue.length === 0) {
+      throw new Error("保存APIのURLを入力してください。");
+    }
+
+    let url;
+    try {
+      url = new URL(normalizedValue);
+    } catch (error) {
+      throw new Error("保存APIのURL形式を確認してください。");
+    }
+    const isLocalHttp = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+
+    if (url.protocol !== "https:" && !isLocalHttp) {
+      throw new Error("保存APIのURLは https:// を使用してください。");
+    }
+
+    return url.toString().replace(/\/$/, "");
+  }
+
+  function getCloudApiUrl() {
+    if (!tsumegoCloudApiUrlInput) {
+      throw new Error("保存APIのURL入力欄が見つかりません。");
+    }
+
+    const apiUrl = normalizeCloudApiUrl(tsumegoCloudApiUrlInput.value);
+    try {
+      localStorage.setItem(TSUMEGO_CLOUD_API_URL_KEY, apiUrl);
+    } catch (error) {
+      // URLを保存できない場合も、その場の通信は続けます。
+    }
+    return apiUrl;
+  }
+
+  async function readCloudResponse(response) {
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      // JSONでないエラー応答は、HTTPステータスで案内します。
+    }
+
+    if (!response.ok) {
+      throw new Error(payload?.error ?? `保存APIがエラーを返しました（HTTP ${response.status}）。`);
+    }
+
+    return payload;
+  }
+
+  async function refreshCloudDatasets({ announce = true } = {}) {
+    const apiUrl = getCloudApiUrl();
+    const response = await fetch(`${apiUrl}/api/datasets`, {
+      headers: { Accept: "application/json" }
+    });
+    const payload = await readCloudResponse(response);
+    cloudDatasetSummaries = Array.isArray(payload?.datasets) ? payload.datasets : [];
+    rebuildTsumegoDatasetSelect();
+
+    if (announce) {
+      setTsumegoDatasetStatus(`Cloudflareの共有データを${cloudDatasetSummaries.length}件読み込みました。`);
+    }
+  }
+
+  async function fetchCloudDataset(datasetId) {
+    const apiUrl = getCloudApiUrl();
+    const response = await fetch(`${apiUrl}/api/datasets/${encodeURIComponent(datasetId)}`, {
+      headers: { Accept: "application/json" }
+    });
+    const payload = await readCloudResponse(response);
+    return prepareUploadedTsumegoDataset(payload);
+  }
+
+  async function readSelectedUploadFile() {
+    const file = tsumegoFileInput?.files?.[0];
+    if (!file) {
+      throw new Error("先に詰碁JSONファイルを選んでください。");
+    }
+
+    if (file.size > TSUMEGO_MAX_UPLOAD_BYTES) {
+      throw new Error("JSONファイルは1MB以下にしてください。");
+    }
+
+    if (selectedUploadDataset?.file === file) {
+      return selectedUploadDataset.prepared;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (error) {
+      throw new Error("JSONとして読み込めませんでした。ファイルの構文を確認してください。");
+    }
+
+    const prepared = prepareUploadedTsumegoDataset(parsed);
+    selectedUploadDataset = { file, prepared };
+    return prepared;
+  }
+
+  function restoreStoredTsumegoDataset() {
+    let storedDatasetKey = "built-in";
+    try {
+      storedDatasetKey = localStorage.getItem(TSUMEGO_ACTIVE_DATASET_KEY) ?? "built-in";
+    } catch (error) {
+      return;
+    }
+
+    if (!storedDatasetKey.startsWith("local:")) {
+      return;
+    }
+
+    const datasetId = storedDatasetKey.slice("local:".length);
+    const entry = readLocalTsumegoDatasets().find((candidate) => candidate.id === datasetId);
+    if (!entry?.dataset) {
+      return;
+    }
+
+    try {
+      const prepared = prepareUploadedTsumegoDataset(entry.dataset);
+      replaceTsumegoProblems(prepared.webData);
+      activeTsumegoDatasetKey = storedDatasetKey;
+      tsumegoState = createTsumegoState(TSUMEGO_PROBLEMS[0].id);
+    } catch (error) {
+      activeTsumegoDatasetKey = "built-in";
+    }
   }
 
   function scheduleTsumegoAutoWhiteIfNeeded() {
@@ -2165,9 +2642,20 @@ function initializeApp() {
     renderGame();
   }
 
+  restoreStoredTsumegoDataset();
+
+  if (tsumegoCloudApiUrlInput) {
+    try {
+      tsumegoCloudApiUrlInput.value = localStorage.getItem(TSUMEGO_CLOUD_API_URL_KEY) ?? "";
+    } catch (error) {
+      tsumegoCloudApiUrlInput.value = "";
+    }
+  }
+
   buildGameBoard(getCurrentBoardSize());
   buildTsumegoProblemButtons();
   syncTsumegoBoard();
+  rebuildTsumegoDatasetSelect();
 
   undoButton.addEventListener("click", handleUndo);
   redoButton.addEventListener("click", handleRedo);
@@ -2219,6 +2707,156 @@ function initializeApp() {
     });
   }
 
+  if (tsumegoFileInput) {
+    tsumegoFileInput.addEventListener("change", async () => {
+      selectedUploadDataset = null;
+      if (!tsumegoFileInput.files?.[0]) {
+        setTsumegoDatasetStatus("");
+        return;
+      }
+
+      try {
+        const prepared = await readSelectedUploadFile();
+        setTsumegoDatasetStatus(
+          `「${prepared.summary.name}」を確認しました（${prepared.summary.problemCount}問）。登録先を選んでください。`
+        );
+      } catch (error) {
+        setTsumegoDatasetStatus(error.message, true);
+      }
+    });
+  }
+
+  if (tsumegoLocalImportButton) {
+    tsumegoLocalImportButton.addEventListener("click", async () => {
+      try {
+        const prepared = await readSelectedUploadFile();
+        const localDatasets = readLocalTsumegoDatasets().filter(
+          (entry) => entry.id !== prepared.summary.id
+        );
+        localDatasets.push({
+          ...prepared.summary,
+          savedAt: new Date().toISOString(),
+          dataset: prepared.raw
+        });
+        writeLocalTsumegoDatasets(localDatasets);
+        activateTsumegoDataset(
+          prepared.webData,
+          `local:${prepared.summary.id}`,
+          `「${prepared.summary.name}」をこの端末に登録しました。`
+        );
+      } catch (error) {
+        setTsumegoDatasetStatus(error.message, true);
+      }
+    });
+  }
+
+  if (tsumegoLocalDeleteButton) {
+    tsumegoLocalDeleteButton.addEventListener("click", () => {
+      if (!activeTsumegoDatasetKey.startsWith("local:")) {
+        setTsumegoDatasetStatus("端末内データを選択してから削除してください。", true);
+        return;
+      }
+
+      const datasetId = activeTsumegoDatasetKey.slice("local:".length);
+      const remaining = readLocalTsumegoDatasets().filter((entry) => entry.id !== datasetId);
+      writeLocalTsumegoDatasets(remaining);
+      activateTsumegoDataset(TSUMEGO_DATA, "built-in", "端末内データを削除し、標準問題に戻しました。");
+    });
+  }
+
+  if (tsumegoDatasetSelect) {
+    tsumegoDatasetSelect.addEventListener("change", async () => {
+      const selectedKey = tsumegoDatasetSelect.value;
+      tsumegoDatasetSelect.disabled = true;
+
+      try {
+        if (selectedKey === "built-in") {
+          activateTsumegoDataset(TSUMEGO_DATA, "built-in", "標準問題に切り替えました。");
+          return;
+        }
+
+        if (selectedKey.startsWith("local:")) {
+          const datasetId = selectedKey.slice("local:".length);
+          const entry = readLocalTsumegoDatasets().find((candidate) => candidate.id === datasetId);
+          if (!entry?.dataset) {
+            throw new Error("端末内データが見つかりませんでした。");
+          }
+          const prepared = prepareUploadedTsumegoDataset(entry.dataset);
+          activateTsumegoDataset(
+            prepared.webData,
+            selectedKey,
+            `端末内の「${prepared.summary.name}」に切り替えました。`
+          );
+          return;
+        }
+
+        if (selectedKey.startsWith("cloud:")) {
+          const datasetId = selectedKey.slice("cloud:".length);
+          setTsumegoDatasetStatus("Cloudflareから問題データを読み込んでいます。");
+          const prepared = await fetchCloudDataset(datasetId);
+          activateTsumegoDataset(
+            prepared.webData,
+            selectedKey,
+            `共有データ「${prepared.summary.name}」に切り替えました。`
+          );
+        }
+      } catch (error) {
+        rebuildTsumegoDatasetSelect();
+        setTsumegoDatasetStatus(error.message, true);
+      } finally {
+        tsumegoDatasetSelect.disabled = false;
+      }
+    });
+  }
+
+  if (tsumegoCloudRefreshButton) {
+    tsumegoCloudRefreshButton.addEventListener("click", async () => {
+      tsumegoCloudRefreshButton.disabled = true;
+      try {
+        await refreshCloudDatasets();
+      } catch (error) {
+        setTsumegoDatasetStatus(error.message, true);
+      } finally {
+        tsumegoCloudRefreshButton.disabled = false;
+      }
+    });
+  }
+
+  if (tsumegoCloudUploadButton) {
+    tsumegoCloudUploadButton.addEventListener("click", async () => {
+      tsumegoCloudUploadButton.disabled = true;
+      try {
+        const prepared = await readSelectedUploadFile();
+        const apiUrl = getCloudApiUrl();
+        const adminToken = tsumegoCloudAdminTokenInput?.value ?? "";
+        if (adminToken.length === 0) {
+          throw new Error("Cloudflareへ共有するには管理トークンを入力してください。");
+        }
+
+        const response = await fetch(`${apiUrl}/api/datasets`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${adminToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(prepared.raw)
+        });
+        await readCloudResponse(response);
+        await refreshCloudDatasets({ announce: false });
+        activateTsumegoDataset(
+          prepared.webData,
+          `cloud:${prepared.summary.id}`,
+          `「${prepared.summary.name}」をCloudflareへ共有し、表示を切り替えました。`
+        );
+      } catch (error) {
+        setTsumegoDatasetStatus(error.message, true);
+      } finally {
+        tsumegoCloudUploadButton.disabled = false;
+      }
+    });
+  }
+
   render();
 }
 
@@ -2245,6 +2883,8 @@ if (typeof module !== "undefined" && module.exports) {
     APP_MODE_GAME,
     APP_MODE_TSUMEGO,
     TSUMEGO_PROBLEMS,
+    prepareUploadedTsumegoDataset,
+    replaceTsumegoProblems,
     createTsumegoState,
     attemptTsumegoMove,
     isTsumegoLiveByTwoEyes,

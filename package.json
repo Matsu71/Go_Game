@@ -8,7 +8,10 @@
     "validate:tsumego": "node scripts/validate-tsumego.js",
     "refresh:tsumego": "npm run build:tsumego && npm run validate:tsumego",
     "check:script": "node --check script.js",
+    "test:upload": "node --test scripts/test-tsumego-upload.js cloudflare/worker.test.mjs",
     "test:verifier": "python3 -m unittest test_go_tsumego_verifier.py",
-    "check": "npm run validate:tsumego && npm run check:script && npm run test:verifier"
+    "cloudflare:dev": "npx wrangler dev --config cloudflare/wrangler.jsonc",
+    "cloudflare:deploy": "npx wrangler deploy --config cloudflare/wrangler.jsonc",
+    "check": "npm run validate:tsumego && npm run check:script && npm run test:upload && npm run test:verifier"
   }
 }
